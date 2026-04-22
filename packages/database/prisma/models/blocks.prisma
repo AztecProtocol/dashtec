@@ -1,0 +1,79 @@
+model L2BlockProposed {
+  id                    String  @id
+  l2_block_number       BigInt
+  archive               String  @db.Char(66)
+  versioned_blob_hashes String  @db.Text
+  payload_digest        String? @db.Char(66)
+  attestations_hash     String? @db.Char(66)
+  rollup_address        String  @db.Char(42)
+  block_number          BigInt
+  transaction_hash      String  @db.Char(66)
+  log_index             Int
+  timestamp             BigInt
+  slot_number           BigInt
+  coinbase              String  @db.Char(42)
+
+  @@unique([transaction_hash, log_index], name: "unique_l2_block_proposed_transaction_log")
+  @@index([coinbase])
+  @@index([slot_number])
+  @@index([l2_block_number])
+  @@index([archive])
+}
+
+model CanonicalRollupUpdated {
+  id               String  @id
+  instance_address String  @db.Char(42)
+  version          String  @db.VarChar(20)
+  block_number     BigInt
+  transaction_hash String  @db.Char(66)
+  log_index        Int
+  timestamp        BigInt?
+
+  @@unique([transaction_hash, log_index], name: "unique_canonical_rollup_updated_transaction_log")
+  @@index([instance_address])
+  @@index([version])
+}
+
+model CheckpointInvalidated {
+  id               String @id
+  checkpoint_number BigInt
+  rollup_address   String @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  block_number     BigInt
+  transaction_hash String @db.Char(66)
+  log_index        Int
+  timestamp        BigInt
+
+  @@unique([transaction_hash, log_index], name: "unique_checkpoint_invalidated_transaction_log")
+  @@index([checkpoint_number])
+  @@index([rollup_address])
+}
+
+model L2ProofVerified {
+  id               String  @id
+  l2_block_number  BigInt
+  prover_id        String  @db.Char(42)
+  rollup_address   String  @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  block_number     BigInt
+  transaction_hash String  @db.Char(66)
+  log_index        Int
+  timestamp        BigInt
+  epoch_number     String?
+
+  transaction_from                     String  @db.Char(42)
+  transaction_to                       String? @db.Char(42)
+  transaction_gas                      BigInt
+  transaction_gas_price                BigInt?
+  transaction_value                    BigInt
+  transaction_nonce                    Int
+  transaction_max_fee_per_gas          BigInt?
+  transaction_max_priority_fee_per_gas BigInt?
+
+  @@unique([transaction_hash, log_index], name: "unique_l2_proof_verified_transaction_log")
+  @@index([l2_block_number])
+  @@index([prover_id])
+  @@index([transaction_from])
+  @@index([prover_id, epoch_number(sort: Desc)], name: "idx_prover_epoch")
+  @@index([prover_id, timestamp(sort: Desc)], name: "idx_prover_timestamp")
+  @@index([prover_id, transaction_gas, transaction_gas_price], name: "idx_prover_gas")
+  @@index([rollup_address])
+}

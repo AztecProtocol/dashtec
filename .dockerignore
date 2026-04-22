@@ -1,0 +1,21 @@
+.ponder
+*.log
+.git
+.env*
+!.env.example
+!.env.build
+!**/.env.build
+.turbo
+coverage
+.vscode
+.idea
+package-lock.json
+*.md
+!README.md
+node_modules
+packages/indexer-ponder/.ponder
+.DS_Store
+*.swp
+*.swo
+# Allow Prisma 7 generated client
+!packages/database/src/generated

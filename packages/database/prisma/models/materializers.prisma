@@ -1,0 +1,65 @@
+/**
+ * Materializer tables for ponder indexed event
+ */
+
+model MaterializerProviderValidatorList {
+  id                 String   @id @default(uuid()) @db.Uuid
+  providerIdentifier String   @db.VarChar(78)
+  attesterAddress    String   @db.VarChar(42)
+  blockNumber        BigInt
+  logIndex           Int
+  timestamp          BigInt?
+  txHash             String?  @db.VarChar(66)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([providerIdentifier, attesterAddress], name: "unique_provider_attester_mapping")
+  @@index([providerIdentifier])
+  @@index([attesterAddress])
+}
+
+model MaterializerValidatorStatusHistory {
+  attesterAddress String  @id @db.VarChar(42)
+  status          String  @db.VarChar(20)
+  blockNumber     String  @db.VarChar(20)
+  logIndex        String  @db.VarChar(10)
+  timestamp       String? @db.VarChar(30)
+  txHash          String? @db.VarChar(66)
+
+  @@index([attesterAddress, status])
+  @@index([attesterAddress])
+  @@index([status])
+  @@index([blockNumber, logIndex])
+}
+
+model MaterializerValidatorBalanceHistory {
+  attesterAddress String  @id @db.VarChar(42)
+  balance         Decimal @db.Decimal(30, 2)
+  blockNumber     String  @db.VarChar(20)
+  logIndex        String  @db.VarChar(10)
+  timestamp       String? @db.VarChar(30)
+  txHash          String? @db.VarChar(66)
+
+  @@index([attesterAddress, balance])
+  @@index([attesterAddress])
+  @@index([balance])
+  @@index([blockNumber, logIndex])
+}
+
+model MaterializerCheckpoint {
+  checkpointName String   @db.VarChar(100)
+  rollup_address String   @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  blockNumber    String   @default("0") @db.VarChar(20)
+  logIndex       String   @default("0") @db.VarChar(10)
+  count          Int      @default(0)
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  @@id([checkpointName, rollup_address])
+  @@index([rollup_address])
+}
+
+model BlockHashCache {
+  blockNumber BigInt   @id
+  blockHash   String   @db.Char(66)
+  createdAt   DateTime @default(now())
+}

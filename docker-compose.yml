@@ -1,0 +1,334 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: dashtec-web:latest
+    container_name: dashtec-web
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    env_file:
+      - apps/web/.env
+    environment:
+      DATABASE_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
+      REDIS_URL: redis://:dashtec@${REDIS_HOST:-redis-mainnet}:6379
+      DATABASE_URL_REPLICA: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
+      NEXT_SENTINEL_URL: ${NEXT_SENTINEL_URL:-http://sentinel-proxy:8080/pruned}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - mainnet
+
+  indexer-ponder:
+    build:
+      context: .
+      dockerfile: packages/indexer-ponder/Dockerfile
+    image: dashtec-indexer-ponder:latest
+    container_name: dashtec-indexer-ponder
+    ports:
+      - "${PONDER_PORT:-42069}:42069"
+    env_file:
+      - packages/indexer-ponder/.env
+    environment:
+      DATABASE_SCHEMA: ponder_prod
+      DATABASE_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
+      REDIS_URL: redis://:dashtec@${REDIS_HOST:-redis-mainnet}:6379
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:42069/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    profiles:
+      - mainnet
+
+  indexer-custom:
+    build:
+      context: .
+      dockerfile: packages/indexer-custom/Dockerfile
+    image: dashtec-indexer-custom:latest
+    container_name: dashtec-indexer-custom
+    # Default command runs all collectors (see Dockerfile CMD)
+    ports:
+      - "${COLLECTOR_VALIDATOR_STATS_PORT:-4000}:4000"
+      - "${COLLECTOR_VALIDATOR_LIST_PORT:-4001}:4001"
+      - "${COLLECTOR_EPOCH_INTEGRITY_PORT:-4002}:4002"
+      - "${COLLECTOR_VALIDATOR_MIGRATION_PORT:-4003}:4003"
+      - "${COLLECTOR_PROVIDER_LIST_PORT:-4004}:4004"
+    env_file:
+      - packages/indexer-custom/.env
+    environment:
+      DATABASE_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
+      DATABASE_READ_REPLICA_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
+      REDIS_URL: redis://:dashtec@${REDIS_HOST:-redis-mainnet}:6379
+      VALIDATOR_STATS_RPC_URL: ${VALIDATOR_STATS_RPC_URL:-http://sentinel-proxy:8080/archiver}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    profiles:
+      - mainnet
+
+  materializer:
+    build:
+      context: .
+      dockerfile: packages/materializer/Dockerfile
+    image: dashtec-materializer:latest
+    container_name: dashtec-materializer
+    env_file:
+      - packages/materializer/.env
+    environment:
+      DATABASE_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
+      PONDER_SCHEMA: ponder_prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -x node || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    profiles:
+      - mainnet
+
+  sentinel-proxy:
+    build:
+      context: .
+      dockerfile: services/sentinel-proxy-go/Dockerfile
+    image: dashtec-sentinel-proxy:latest
+    container_name: dashtec-sentinel-proxy
+    ports:
+      - "${SENTINEL_PROXY_PORT:-8080}:8080"
+    env_file:
+      - services/sentinel-proxy-go/.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - mainnet
+
+  # Testnet Web
+  web-testnet:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: dashtec-web:testnet
+    container_name: dashtec-web-testnet
+    ports:
+      - "${WEB_TESTNET_PORT:-3001}:3000"
+    env_file:
+      - apps/web/.env
+    environment:
+      DATABASE_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
+      REDIS_URL: redis://:dashtec@redis-testnet:6379
+      DATABASE_URL_REPLICA: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
+      NEXT_SENTINEL_URL: ${NEXT_SENTINEL_URL_TESTNET:-http://sentinel-proxy-testnet:8080/pruned}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - testnet
+
+  # Testnet Indexer Ponder
+  indexer-ponder-testnet:
+    build:
+      context: .
+      dockerfile: packages/indexer-ponder/Dockerfile
+    image: dashtec-indexer-ponder:testnet
+    container_name: dashtec-indexer-ponder-testnet
+    ports:
+      - "${PONDER_TESTNET_PORT:-42070}:42069"
+    env_file:
+      - packages/indexer-ponder/.env
+    environment:
+      DATABASE_SCHEMA: ponder_prod
+      DATABASE_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
+      REDIS_URL: redis://:dashtec@redis-testnet:6379
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:42069/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    profiles:
+      - testnet
+
+  # Testnet Indexer Custom
+  indexer-custom-testnet:
+    build:
+      context: .
+      dockerfile: packages/indexer-custom/Dockerfile
+    image: dashtec-indexer-custom:testnet
+    container_name: dashtec-indexer-custom-testnet
+    ports:
+      - "${COLLECTOR_VALIDATOR_STATS_TESTNET_PORT:-4010}:4000"
+      - "${COLLECTOR_VALIDATOR_LIST_TESTNET_PORT:-4011}:4001"
+      - "${COLLECTOR_EPOCH_INTEGRITY_TESTNET_PORT:-4012}:4002"
+      - "${COLLECTOR_VALIDATOR_MIGRATION_TESTNET_PORT:-4013}:4003"
+      - "${COLLECTOR_PROVIDER_LIST_TESTNET_PORT:-4014}:4004"
+    env_file:
+      - packages/indexer-custom/.env
+    environment:
+      DATABASE_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
+      DATABASE_READ_REPLICA_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
+      REDIS_URL: redis://:dashtec@redis-testnet:6379
+      VALIDATOR_STATS_RPC_URL: ${VALIDATOR_STATS_RPC_URL_TESTNET:-http://sentinel-proxy-testnet:8080/archiver}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    profiles:
+      - testnet
+
+  # Testnet Materializer
+  materializer-testnet:
+    build:
+      context: .
+      dockerfile: packages/materializer/Dockerfile
+    image: dashtec-materializer:testnet
+    container_name: dashtec-materializer-testnet
+    env_file:
+      - packages/materializer/.env
+    environment:
+      DATABASE_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
+      PONDER_SCHEMA: ponder_prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -x node || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    profiles:
+      - testnet
+
+  # Testnet Sentinel Proxy
+  sentinel-proxy-testnet:
+    build:
+      context: .
+      dockerfile: services/sentinel-proxy-go/Dockerfile
+    image: dashtec-sentinel-proxy:testnet
+    container_name: dashtec-sentinel-proxy-testnet
+    ports:
+      - "${SENTINEL_PROXY_TESTNET_PORT:-8081}:8080"
+    env_file:
+      - services/sentinel-proxy-go/.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - testnet
+
+  # Mainnet Database
+  postgres-mainnet:
+    image: postgres:16-alpine
+    container_name: dashtec-postgres-mainnet
+    ports:
+      - "${POSTGRES_MAINNET_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: dashtec
+      POSTGRES_PASSWORD: dashtec
+      POSTGRES_DB: dashtec
+    volumes:
+      - postgres_data_mainnet:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dashtec"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - mainnet
+
+  # Testnet Database
+  postgres-testnet:
+    image: postgres:16-alpine
+    container_name: dashtec-postgres-testnet
+    ports:
+      - "${POSTGRES_TESTNET_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: dashtec
+      POSTGRES_PASSWORD: dashtec
+      POSTGRES_DB: dashtec
+    volumes:
+      - postgres_data_testnet:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dashtec"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - testnet
+
+  # Mainnet Redis
+  redis-mainnet:
+    image: redis:7-alpine
+    container_name: dashtec-redis-mainnet
+    command: redis-server --requirepass ${REDIS_PASSWORD:-dashtec}
+    ports:
+      - "${REDIS_MAINNET_PORT:-6379}:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-dashtec}
+    volumes:
+      - redis_data_mainnet:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dashtec}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - mainnet
+
+  # Testnet Redis
+  redis-testnet:
+    image: redis:7-alpine
+    container_name: dashtec-redis-testnet
+    command: redis-server --requirepass ${REDIS_PASSWORD:-dashtec}
+    ports:
+      - "${REDIS_TESTNET_PORT:-6380}:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-dashtec}
+    volumes:
+      - redis_data_testnet:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dashtec}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - testnet
+
+volumes:
+  postgres_data_mainnet:
+  postgres_data_testnet:
+  redis_data_mainnet:
+  redis_data_testnet:

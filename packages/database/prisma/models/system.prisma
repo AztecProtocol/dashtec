@@ -1,0 +1,21 @@
+// System and utility models
+
+model AuthChallenge {
+  id        String   @id @default(cuid())
+  address   String   @unique @db.VarChar(42)
+  challenge String   @unique
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model AppErrorLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  error_code  String
+  message     String
+  stack_trace String?
+  created_at  DateTime @default(now())
+
+  @@index([created_at])
+  @@index([error_code])
+}

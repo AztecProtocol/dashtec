@@ -1,0 +1,490 @@
+export const RollupABI = [
+  {
+    name: 'getStakingAsset',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    name: 'getEjectionThreshold',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getActivationThreshold',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getExitDelay',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getManaTarget',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getTargetCommitteeSize',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getGenesisTime',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getSlotDuration',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getEpochDuration',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getSlasher',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    name: 'getGSE',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    name: 'getSequencerRewards',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: '_sequencer', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getEpochCommittee',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: '_epoch', type: 'uint256' }],
+    outputs: [{ name: '', type: 'address[]' }],
+  },
+  {
+    name: 'getNextFlushableEpoch',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getEntryQueueFlushSize',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getCurrentL2BlockNumber',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getL2BlockHash',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: '_blockNumber', type: 'uint256' }],
+    outputs: [{ name: '', type: 'bytes32' }],
+  },
+  {
+    name: 'SLOTS_PER_EPOCH',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'getAttesterView',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: '_attester', type: 'address' }],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        components: [
+          { name: 'status', type: 'uint8' },
+          { name: 'effectiveBalance', type: 'uint256' },
+          {
+            name: 'exit',
+            type: 'tuple',
+            components: [
+              { name: 'withdrawalId', type: 'uint256' },
+              { name: 'amount', type: 'uint256' },
+              { name: 'exitableAt', type: 'uint256' },
+              { name: 'recipientOrWithdrawer', type: 'address' },
+              { name: 'isRecipient', type: 'bool' },
+              { name: 'exists', type: 'bool' },
+            ],
+          },
+          {
+            name: 'config',
+            type: 'tuple',
+            components: [
+              {
+                name: 'publicKey',
+                type: 'tuple',
+                components: [
+                  { name: 'x', type: 'uint256' },
+                  { name: 'y', type: 'uint256' },
+                ],
+              },
+              { name: 'withdrawer', type: 'address' },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'getAttesters',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: 'attesters', type: 'address[]' }],
+  },
+  {
+    name: 'getActiveAttesterCount',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: 'count', type: 'uint256' }],
+  },
+  {
+    name: 'getAttesterAtIndex',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: '_index', type: 'uint256' }],
+    outputs: [{ name: 'attester', type: 'address' }],
+  },
+  {
+    type: 'event',
+    name: 'L2BlockProcessed',
+    inputs: [
+      { name: 'blockNumber', type: 'uint256', indexed: true },
+      { name: 'blockHash', type: 'bytes32', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'ValidatorQueued',
+    inputs: [
+      { name: 'attester', type: 'address', indexed: true },
+      { name: 'withdrawer', type: 'address', indexed: true },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'Deposit',
+    inputs: [
+      { name: 'attester', type: 'address', indexed: true },
+      { name: 'withdrawer', type: 'address', indexed: true },
+      {
+        name: 'publicKeyInG1',
+        type: 'tuple',
+        indexed: false,
+        components: [
+          { name: 'x', type: 'uint256' },
+          { name: 'y', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'publicKeyInG2',
+        type: 'tuple',
+        indexed: false,
+        components: [
+          { name: 'x0', type: 'uint256' },
+          { name: 'x1', type: 'uint256' },
+          { name: 'y0', type: 'uint256' },
+          { name: 'y1', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'proofOfPossession',
+        type: 'tuple',
+        indexed: false,
+        components: [
+          { name: 'x', type: 'uint256' },
+          { name: 'y', type: 'uint256' },
+        ],
+      },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'FailedDeposit',
+    inputs: [
+      { name: 'attester', type: 'address', indexed: true },
+      { name: 'withdrawer', type: 'address', indexed: true },
+      {
+        name: 'publicKeyInG1',
+        type: 'tuple',
+        indexed: false,
+        components: [
+          { name: 'x', type: 'uint256' },
+          { name: 'y', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'publicKeyInG2',
+        type: 'tuple',
+        indexed: false,
+        components: [
+          { name: 'x0', type: 'uint256' },
+          { name: 'x1', type: 'uint256' },
+          { name: 'y0', type: 'uint256' },
+          { name: 'y1', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'proofOfPossession',
+        type: 'tuple',
+        indexed: false,
+        components: [
+          { name: 'x', type: 'uint256' },
+          { name: 'y', type: 'uint256' },
+        ],
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'WithdrawInitiated',
+    inputs: [
+      { name: 'attester', type: 'address', indexed: true },
+      { name: 'recipient', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'WithdrawFinalized',
+    inputs: [
+      { name: 'attester', type: 'address', indexed: true },
+      { name: 'recipient', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'Slashed',
+    inputs: [
+      { name: 'attester', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'L2BlockProposed',
+    inputs: [
+      { name: 'blockNumber', type: 'uint256', indexed: true },
+      { name: 'archive', type: 'bytes32', indexed: true },
+      { name: 'versionedBlobHashes', type: 'bytes32[]', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'L2ProofVerified',
+    inputs: [
+      { name: 'checkpointNumber', type: 'uint256', indexed: true },
+      { name: 'proverId', type: 'address', indexed: true },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'CheckpointProposed',
+    inputs: [
+      { name: 'checkpointNumber', type: 'uint256', indexed: true },
+      { name: 'archive', type: 'bytes32', indexed: true },
+      { name: 'versionedBlobHashes', type: 'bytes32[]', indexed: false },
+      { name: 'payloadDigest', type: 'bytes32', indexed: false },
+      { name: 'attestationsHash', type: 'bytes32', indexed: false },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'CheckpointInvalidated',
+    inputs: [
+      { name: 'checkpointNumber', type: 'uint256', indexed: true },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'function',
+    name: 'propose',
+    inputs: [
+      {
+        name: '_args',
+        type: 'tuple',
+        components: [
+          { name: 'archive', type: 'bytes32' },
+          {
+            name: 'oracleInput',
+            type: 'tuple',
+            components: [{ name: 'feeAssetPriceModifier', type: 'int256' }],
+          },
+          {
+            name: 'header',
+            type: 'tuple',
+            components: [
+              { name: 'lastArchiveRoot', type: 'bytes32' },
+              { name: 'blockHeadersHash', type: 'bytes32' },
+              { name: 'blobsHash', type: 'bytes32' },
+              { name: 'inHash', type: 'bytes32' },
+              { name: 'outHash', type: 'bytes32' },
+              { name: 'slotNumber', type: 'uint256' },
+              { name: 'timestamp', type: 'uint256' },
+              { name: 'coinbase', type: 'address' },
+              { name: 'feeRecipient', type: 'bytes32' },
+              {
+                name: 'gasFees',
+                type: 'tuple',
+                components: [
+                  { name: 'feePerDaGas', type: 'uint128' },
+                  { name: 'feePerL2Gas', type: 'uint128' },
+                ],
+              },
+              { name: 'totalManaUsed', type: 'uint256' },
+            ],
+          },
+        ],
+      },
+      {
+        name: '_attestations',
+        type: 'tuple',
+        components: [
+          { name: 'signatureIndices', type: 'bytes' },
+          { name: 'signaturesOrAddresses', type: 'bytes' },
+        ],
+      },
+      { name: '_signers', type: 'address[]' },
+      {
+        name: '_attestationsAndSignersSignature',
+        type: 'tuple',
+        components: [
+          { name: 'v', type: 'uint8' },
+          { name: 'r', type: 'bytes32' },
+          { name: 's', type: 'bytes32' },
+        ],
+      },
+      { name: '_blobInput', type: 'bytes' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    name: 'getEpochForCheckpoint',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: '_checkpointNumber', type: 'uint256' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+] as const;
+
+// Dedicated const for propose function ABI
+export const ProposeABI = {
+  type: 'function',
+  name: 'propose',
+  inputs: [
+    {
+      name: '_args',
+      type: 'tuple',
+      components: [
+        { name: 'archive', type: 'bytes32' },
+        {
+          name: 'oracleInput',
+          type: 'tuple',
+          components: [{ name: 'feeAssetPriceModifier', type: 'int256' }],
+        },
+        {
+          name: 'header',
+          type: 'tuple',
+          components: [
+            { name: 'lastArchiveRoot', type: 'bytes32' },
+            { name: 'blockHeadersHash', type: 'bytes32' },
+            { name: 'blobsHash', type: 'bytes32' },
+            { name: 'inHash', type: 'bytes32' },
+            { name: 'outHash', type: 'bytes32' },
+            { name: 'slotNumber', type: 'uint256' },
+            { name: 'timestamp', type: 'uint256' },
+            { name: 'coinbase', type: 'address' },
+            { name: 'feeRecipient', type: 'bytes32' },
+            {
+              name: 'gasFees',
+              type: 'tuple',
+              components: [
+                { name: 'feePerDaGas', type: 'uint128' },
+                { name: 'feePerL2Gas', type: 'uint128' },
+              ],
+            },
+            { name: 'totalManaUsed', type: 'uint256' },
+          ],
+        },
+      ],
+    },
+    {
+      name: '_attestations',
+      type: 'tuple',
+      components: [
+        { name: 'signatureIndices', type: 'bytes' },
+        { name: 'signaturesOrAddresses', type: 'bytes' },
+      ],
+    },
+    { name: '_signers', type: 'address[]' },
+    {
+      name: '_attestationsAndSignersSignature',
+      type: 'tuple',
+      components: [
+        { name: 'v', type: 'uint8' },
+        { name: 'r', type: 'bytes32' },
+        { name: 's', type: 'bytes32' },
+      ],
+    },
+    { name: '_blobInput', type: 'bytes' },
+  ],
+  outputs: [],
+  stateMutability: 'nonpayable',
+} as const

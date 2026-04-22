@@ -1,0 +1,102 @@
+// Provider-related models
+
+model Provider {
+  id String @id @default(uuid()) @db.Char(36)
+
+  providerIdentifier String  @unique @db.VarChar(78)
+  providerAdmin      String  @db.Char(42)
+  providerTakeRate   Int     @db.SmallInt
+  rewardsRecipient   String  @db.Char(42)
+  rollup_address     String  @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+
+  // Event metadata
+  blockNumber BigInt
+  txHash      String @db.Char(66)
+  logIndex    Int
+  timestamp   BigInt
+
+  @@index([providerAdmin])
+  @@index([rollup_address])
+}
+
+model ProviderAttester {
+  id String @id @default(uuid()) @db.Char(36)
+
+  providerIdentifier String  @db.VarChar(78)
+  attesterAddress    String  @db.Char(42)
+  rollup_address     String  @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+
+  // Event metadata
+  blockNumber BigInt
+  txHash      String @db.Char(66)
+  logIndex    Int
+  timestamp   BigInt
+
+  @@unique([txHash, logIndex, providerIdentifier, attesterAddress])
+  @@index([providerIdentifier])
+  @@index([attesterAddress])
+  @@index([rollup_address])
+}
+
+model ProviderQueueDrip {
+  id String @id @default(uuid()) @db.Char(36)
+
+  providerIdentifier String  @db.VarChar(78)
+  attesterAddress    String  @db.Char(42)
+  rollup_address     String  @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+
+  // Event metadata
+  blockNumber BigInt
+  txHash      String @db.Char(66)
+  logIndex    Int
+  timestamp   BigInt
+
+  @@unique([txHash, logIndex])
+  @@index([providerIdentifier])
+  @@index([attesterAddress])
+  @@index([blockNumber])
+  @@index([rollup_address])
+}
+
+model StakedWithProvider {
+  id String @id @default(uuid()) @db.Char(36)
+
+  providerIdentifier             String @db.VarChar(78)
+  rollupAddress                  String @db.Char(42)
+  attesterAddress                String @db.Char(42)
+  coinbaseSplitContractAddress   String @db.Char(42)
+  stakerAddress                  String @db.Char(42)
+
+  // Event metadata
+  blockNumber BigInt
+  txHash      String @db.Char(66)
+  logIndex    Int
+  timestamp   BigInt
+
+  @@unique([txHash, logIndex])
+  @@index([providerIdentifier])
+  @@index([attesterAddress])
+  @@index([stakerAddress])
+}
+
+model ProviderMetadata {
+  id String @id @default(uuid()) @db.Char(36)
+
+  // Provider identifier (unique key)
+  providerIdentifier String @unique @db.VarChar(78)
+
+  // Metadata from Staking App API
+  name        String? @db.VarChar(255)
+  description String? @db.Text
+  website     String? @db.VarChar(512)
+  logoUrl     String? @db.VarChar(512)
+  email       String? @db.VarChar(255)
+  discord     String? @db.VarChar(255)
+
+  // Timestamps
+  lastUpdated DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@index([providerIdentifier])
+  @@index([lastUpdated])
+}

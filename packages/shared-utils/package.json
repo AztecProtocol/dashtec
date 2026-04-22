@@ -1,0 +1,31 @@
+{
+  "name": "@dashtec/shared-utils",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./formatters": "./dist/formatters.js",
+    "./validators": "./dist/validators.js",
+    "./contracts": "./dist/contracts.js",
+    "./logger": "./dist/logger.js",
+    "./rpc": "./dist/rpc.js"
+  },
+  "scripts": {
+    "build": "tsup --clean",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf node_modules dist"
+  },
+  "dependencies": {
+    "@dashtec/logger": "workspace:*",
+    "@dashtec/shared-types": "workspace:*",
+    "ioredis": "^5.8.2",
+    "viem": "^2.31.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3"
+  }
+}

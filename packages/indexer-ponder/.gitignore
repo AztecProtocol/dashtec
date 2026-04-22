@@ -1,0 +1,10 @@
+# Ponder generated files
+.ponder
+generated
+ponder-env.d.ts
+
+# Dependencies
+node_modules
+
+# Build
+dist

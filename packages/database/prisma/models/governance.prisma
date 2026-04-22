@@ -1,0 +1,125 @@
+// Governance and proposer models
+
+enum ProposerVoteType {
+  GOVERNANCE_PROPOSER
+  SLASHING_PROPOSER
+}
+
+model ProposerVote {
+  id         String   @id @default(uuid()) @db.Uuid
+  created_at DateTime @default(now())
+
+  vote_type        ProposerVoteType
+  signaler_address String           @db.VarChar(42)
+  payload_address  String           @db.VarChar(42)
+  rollup_address   String           @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  round_number     Int
+  slot_number      BigInt?
+  epoch_number     BigInt?
+
+  block_number     BigInt
+  transaction_hash String    @db.VarChar(66)
+  log_index        Int
+  timestamp        String?   @db.VarChar(30)
+  vote_date        DateTime?
+  contract_address String?   @db.VarChar(42)
+
+  @@unique([transaction_hash, log_index], name: "unique_vote_transaction_log")
+  @@index([vote_type])
+  @@index([signaler_address])
+  @@index([payload_address])
+  @@index([block_number])
+  @@index([vote_date])
+  @@index([contract_address])
+  @@index([rollup_address])
+}
+
+model ProposerPayloadSubmittable {
+  id         String   @id @default(uuid()) @db.Uuid
+  created_at DateTime @default(now())
+
+  payload_address  String  @db.VarChar(42)
+  rollup_address   String  @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  round_number     Int
+  slot_number      BigInt?
+  epoch_number     BigInt?
+
+  block_number     BigInt
+  transaction_hash String  @db.VarChar(66)
+  log_index        Int
+  timestamp        String? @db.VarChar(30)
+  contract_address String? @db.VarChar(42)
+
+  @@unique([transaction_hash, log_index], name: "unique_proposer_payload_submittable_transaction_log")
+  @@index([block_number])
+  @@index([transaction_hash])
+  @@index([payload_address])
+  @@index([log_index])
+  @@index([timestamp])
+  @@index([contract_address])
+  @@index([rollup_address])
+}
+
+model ProposerPayloadSubmitted {
+  id         String   @id @default(uuid()) @db.Uuid
+  created_at DateTime @default(now())
+
+  payload_address  String  @db.VarChar(42)
+  rollup_address   String  @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  round_number     Int
+  slot_number      BigInt?
+  epoch_number     BigInt?
+
+  block_number      BigInt
+  transaction_hash  String  @db.VarChar(66)
+  log_index         Int
+  timestamp         String? @db.VarChar(30)
+  contract_address  String? @db.VarChar(42)
+  submitter_address String? @db.VarChar(42)
+
+  @@unique([transaction_hash, log_index], name: "unique_proposer_payload_submitted_transaction_log")
+  @@index([block_number])
+  @@index([transaction_hash])
+  @@index([payload_address])
+  @@index([log_index])
+  @@index([timestamp])
+  @@index([contract_address])
+  @@index([submitter_address])
+  @@index([rollup_address])
+}
+
+model GovernanceProposerPayload {
+  id         String   @id @default(uuid()) @db.Uuid
+  created_at DateTime @default(now())
+
+  payload_address        String  @db.VarChar(42)
+  rollup_address         String  @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  block_number           BigInt
+  transaction_hash       String  @db.VarChar(66)
+  log_index              Int
+  timestamp              String? @db.VarChar(30)
+  first_signal_timestamp String? @db.VarChar(30)
+  creator_address        String? @db.VarChar(42)
+
+  @@unique([payload_address], name: "unique_governance_proposer_payload_address")
+  @@index([creator_address])
+  @@index([block_number])
+  @@index([transaction_hash])
+  @@index([log_index])
+  @@index([timestamp])
+  @@index([rollup_address])
+}
+
+model GovernanceProposerGSEPayload {
+  id         String   @id @default(uuid()) @db.Uuid
+  created_at DateTime @default(now())
+
+  payload_address     String @db.VarChar(42)
+  gse_payload_address String @db.VarChar(42)
+  proposal_id         String @db.VarChar(50)
+
+  @@unique([payload_address, gse_payload_address, proposal_id], name: "unique_governance_proposer_gse_payload")
+  @@index([payload_address])
+  @@index([proposal_id])
+  @@index([gse_payload_address])
+}

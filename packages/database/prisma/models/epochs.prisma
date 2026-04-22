@@ -1,0 +1,56 @@
+// Epoch and epoch-related statistics
+
+model Epoch {
+  epoch_number                  BigInt
+  rollup_address                String    @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  start_timestamp               DateTime?
+  end_timestamp                 DateTime?
+  planned_proposals             Int?
+  actual_proposals              Int?
+  missed_proposals              Int?
+  total_checkpoints_proposed    BigInt?
+  total_checkpoints_mined       BigInt?
+  total_checkpoints_missed      BigInt?
+  total_blocks_missed           BigInt?
+  total_attestations_expected   BigInt?
+  total_attestations_successful BigInt?
+  total_attestations_missed     BigInt?
+
+  // Relations
+  validatorAttestations      ValidatorAttestation[]
+  validatorEpochPerformances ValidatorEpochPerformance[]
+  epochIntegrityStats        EpochIntegrityStats[]
+
+  @@id([epoch_number, rollup_address])
+  @@index([rollup_address])
+}
+
+model EpochIntegrityStats {
+  epoch_number   BigInt
+  rollup_address String   @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  expected_validators           Int      @default(48)
+  actual_validators             Int      @default(0)
+  block_missed_validators       Int      @default(0)
+  block_mined_validators        Int      @default(0)
+  block_proposed_validators     Int      @default(0)
+  attestation_sent_validators   Int      @default(0)
+  attestation_missed_validators Int      @default(0)
+  empty_validators              Int      @default(0)
+  integrity_score               Decimal  @default(0) @db.Decimal(5, 2)
+  integrity_status              String   @default("UNKNOWN") @db.VarChar(20) // VALID, INVALID, PARTIAL
+  issues                        String[] @default([])
+  last_checked_at               DateTime @default(now())
+
+  // Relations
+  epoch Epoch @relation(fields: [epoch_number, rollup_address], references: [epoch_number, rollup_address])
+
+  @@id([epoch_number, rollup_address])
+  @@index([epoch_number])
+  @@index([rollup_address])
+  @@index([integrity_status])
+  @@index([integrity_score])
+  @@index([last_checked_at])
+}

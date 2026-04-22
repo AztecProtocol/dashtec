@@ -1,0 +1,40 @@
+{
+  "name": "@dashtec/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./dist/client.js",
+    "./singleton": "./dist/singleton.js",
+    "./types": "./dist/types.js"
+  },
+  "scripts": {
+    "build": "tsup --clean",
+    "dev": "tsup --watch",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:reset": "prisma migrate reset",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
+    "clean": "rm -rf node_modules .prisma generated dist"
+  },
+  "dependencies": {
+    "@dashtec/logger": "workspace:*",
+    "@prisma/adapter-pg": "^7.0.0",
+    "@prisma/client": "^7.0.0",
+    "@prisma/client-runtime-utils": "^7.0.0",
+    "@prisma/extension-read-replicas": "^0.4.1",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.6",
+    "dotenv": "^16.5.0",
+    "prisma": "^7.0.0",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,224 @@
+@import "tailwindcss";
+@config "../../tailwind.config.js";
+
+:root {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-success-rgb: 34 197 94;
+  /* green-500 */
+  --color-danger-rgb: 239 68 68;
+  /* red-500 */
+  --color-primary-rgb: 139 92 246;
+  /* amber-500 */
+  --color-warning-rgb: 249 115 22;
+  /* orange-500 */
+}
+
+.dark {
+  --background-rgb: 13 14 18;
+  --foreground-rgb: 224 224 224;
+  --color-success-rgb: 74 222 128;
+  /* green-400 */
+  --color-danger-rgb: 248 113 113;
+  /* red-400 */
+  --color-primary-rgb: 167 139 250;
+  /* amber-400 */
+  --color-warning-rgb: 251 146 60;
+  /* orange-400 */
+}
+
+/* Performance optimizations for animated backgrounds */
+.animated-bg {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Optimize blur effects */
+.blur-3xl, .blur-xl, .blur-md, .blur-sm {
+  will-change: transform;
+  transform: translateZ(0);
+  contain: layout style paint;
+}
+
+/* Prevent layout thrashing on transitions */
+.transition-all, .transition-opacity, .transition-transform {
+  will-change: auto;
+}
+
+body {
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+button,
+a,
+[role="button"] {
+  cursor: pointer;
+}
+
+/* Custom Scrollbar Styles */
+.custom-scrollbar {
+  /* For Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e2e8f0;
+  /* thumb: slate-400, track: slate-200 */
+}
+
+.dark .custom-scrollbar {
+  scrollbar-color: #505050 #101010;
+  /* thumb: slate-600, track: slate-800 */
+}
+
+
+/* For Webkit-based browsers (Chrome, Safari, Edge) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  /* light: slate-300 */
+  border-radius: 100vh;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #475569;
+  /* dark: slate-600 */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+  /* light: slate-400 */
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
+  /* dark: slate-500 */
+}
+
+.scroll-fade {
+  position: relative;
+  -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0,
+      black var(--scroll-fade-top-size, 0),
+      black calc(100% - var(--scroll-fade-bottom-size, 0)),
+      transparent 100%);
+  mask-image: linear-gradient(to bottom,
+      transparent 0,
+      black var(--scroll-fade-top-size, 0),
+      black calc(100% - var(--scroll-fade-bottom-size, 0)),
+      transparent 100%);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s infinite linear;
+  background: linear-gradient(to right, transparent 20%, rgba(255, 255, 255, 0.1) 50%, transparent 80%);
+  background-size: 1000px 100%;
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) scale(1);
+    opacity: 0.4;
+  }
+  25% {
+    transform: translateY(-15px) translateX(-8px) scale(1.1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-25px) translateX(12px) scale(0.9);
+    opacity: 1;
+  }
+  75% {
+    transform: translateY(-10px) translateX(-5px) scale(1.05);
+    opacity: 0.7;
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Background Grid Pattern */
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgb(139 92 246 / 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(139 92 246 / 0.15) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+}
+
+.dark .bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgb(167 139 250 / 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(167 139 250 / 0.2) 1px, transparent 1px);
+}
+
+/* Cosmic Stars Pattern */
+.bg-stars {
+  background-image: 
+    radial-gradient(2px 2px at 20% 30%, white, transparent),
+    radial-gradient(2px 2px at 60% 70%, white, transparent),
+    radial-gradient(1px 1px at 50% 50%, white, transparent),
+    radial-gradient(1px 1px at 80% 10%, white, transparent),
+    radial-gradient(2px 2px at 90% 60%, white, transparent),
+    radial-gradient(1px 1px at 30% 80%, white, transparent),
+    radial-gradient(1px 1px at 70% 40%, white, transparent),
+    radial-gradient(2px 2px at 40% 90%, white, transparent),
+    radial-gradient(1px 1px at 10% 60%, white, transparent),
+    radial-gradient(1px 1px at 95% 20%, white, transparent);
+  background-size: 
+    300px 300px,
+    400px 400px,
+    250px 250px,
+    350px 350px,
+    300px 300px,
+    450px 450px,
+    380px 380px,
+    420px 420px,
+    320px 320px,
+    370px 370px;
+  background-position: 
+    0% 0%,
+    20% 20%,
+    40% 40%,
+    60% 60%,
+    80% 80%,
+    10% 90%,
+    90% 10%,
+    30% 70%,
+    70% 30%,
+    50% 50%;
+}

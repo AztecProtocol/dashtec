@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashtec-config
+data:
+  # Network configuration
+  NETWORK_TYPE: "mainnet"
+
+  # Contract addresses (update these with your actual addresses)
+  ROLLUP_CONTRACT_ADDRESS: ""
+  TALLY_SLASHING_PROPOSER_CONTRACT_ADDRESS: ""
+  EMPIRE_BASE_CONTRACT_ADDRESS: ""
+  GOVERNOR_CONTRACT_ADDRESS: ""
+  GSE_CONTRACT_ADDRESS: ""
+  STAKING_REGISTRY_CONTRACT_ADDRESS: ""
+
+  # RPC URLs (comma-separated for fallback support)
+  RPC_URLS: ""
+
+  # Block configuration
+  START_BLOCK: "0"
+
+  # Application settings
+  LOG_LEVEL: "info"

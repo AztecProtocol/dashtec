@@ -1,0 +1,187 @@
+// Slashing and tally models
+
+model SlashFactoryPayload {
+  id                     String  @id @default(uuid())
+  payload_address        String  @db.VarChar(42)
+  creator_address        String  @db.VarChar(42)
+  rollup_address         String  @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  block_number           BigInt
+  transaction_hash       String  @db.VarChar(66)
+  log_index              Int
+  timestamp              String? @db.VarChar(30)
+  first_signal_timestamp String? @db.VarChar(30)
+
+  created_at DateTime @default(now())
+
+  slashPayloadData SlashPayloadData[]
+
+  @@unique([payload_address], name: "unique_slash_factory_payload_address")
+  @@index([creator_address])
+  @@index([block_number])
+  @@index([transaction_hash])
+  @@index([log_index])
+  @@index([timestamp])
+  @@index([rollup_address])
+}
+
+model SlashPayloadData {
+  id               String  @id @default(uuid())
+  payload_address  String  @db.VarChar(42)
+  attester_address String  @db.VarChar(42)
+  offenses         Int
+  amount           Decimal @db.Decimal(30, 2)
+
+  payload SlashFactoryPayload @relation(fields: [payload_address], references: [payload_address])
+
+  @@unique([payload_address, attester_address, offenses], name: "unique_slash_payload_data")
+  @@index([payload_address, attester_address])
+  @@index([attester_address])
+  @@index([payload_address])
+  @@index([offenses])
+}
+
+model SlashSlashed {
+  id         String   @id @default(uuid()) @db.Uuid
+  created_at DateTime @default(now())
+
+  payload_address  String?  @db.VarChar(42)
+  attester_address String   @db.VarChar(42)
+  rollup_address   String   @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  amount           Decimal  @db.Decimal(30, 2)
+  block_number     BigInt
+  transaction_hash String   @db.VarChar(66)
+  log_index        Int
+  timestamp        String?  @db.VarChar(20)
+  slashed_date     DateTime
+  contract_address String   @db.VarChar(42)
+
+  @@unique([transaction_hash, log_index], name: "unique_slash_slashed_transaction_log")
+  @@index([attester_address])
+  @@index([transaction_hash])
+  @@index([block_number])
+  @@index([slashed_date])
+  @@index([payload_address])
+  @@index([rollup_address])
+}
+
+model TallyVoteCast {
+  id         String   @id @default(uuid()) @db.Uuid
+  created_at DateTime @default(now())
+
+  round_number     Int
+  slot_number      BigInt?
+  proposer_address String  @db.VarChar(42)
+  rollup_address   String  @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  epoch_number     BigInt?
+
+  block_number     BigInt
+  transaction_hash String    @db.VarChar(66)
+  log_index        Int
+  timestamp        String?   @db.VarChar(30)
+  vote_date        DateTime?
+  contract_address String    @db.VarChar(42)
+
+  @@unique([transaction_hash, log_index], name: "unique_tally_vote_cast_transaction_log")
+  @@index([round_number])
+  @@index([slot_number])
+  @@index([proposer_address])
+  @@index([epoch_number])
+  @@index([block_number])
+  @@index([vote_date])
+  @@index([contract_address])
+  @@index([rollup_address])
+}
+
+model TallyRoundExecuted {
+  id         String   @id @default(uuid()) @db.Uuid
+  created_at DateTime @default(now())
+
+  round_number       Int
+  slash_count        Int
+  slot_number        Int?
+  epoch_number       Int?
+  rollup_address     String   @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  payload_address    String?  @db.VarChar(42)
+  total_slash_amount Decimal? @db.Decimal(30, 2)
+  vote_count         Int?
+  quorum_threshold   Int?
+
+  block_number     BigInt
+  transaction_hash String    @db.VarChar(66)
+  log_index        Int
+  timestamp        String?   @db.VarChar(30)
+  executed_date    DateTime?
+  contract_address String    @db.VarChar(42)
+
+  @@unique([transaction_hash, log_index], name: "unique_tally_round_executed_transaction_log")
+  @@index([round_number])
+  @@index([slash_count])
+  @@index([block_number])
+  @@index([executed_date])
+  @@index([contract_address])
+  @@index([rollup_address])
+}
+
+model TallySlashTargetCommittee {
+  id         String   @id @default(uuid()) @db.Uuid
+  created_at DateTime @default(now())
+
+  round_number        Int
+  epoch_index         Int
+  target_epoch_number BigInt
+  committee_members   String[]
+  committee_size      Int
+  block_number        BigInt
+  rollup_address      String   @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+
+  // Metadata for tracking when this data was fetched/computed
+  computed_at      DateTime @default(now())
+  contract_address String   @db.VarChar(42)
+  rollup_instance  String   @db.VarChar(42)
+
+  @@unique([round_number, epoch_index, rollup_address], name: "unique_slash_target_committee")
+  @@index([round_number])
+  @@index([target_epoch_number])
+  @@index([committee_size])
+  @@index([computed_at])
+  @@index([contract_address])
+  @@index([block_number])
+  @@index([rollup_address])
+}
+
+model TallySlashAction {
+  id         String   @id @default(uuid()) @db.Uuid
+  created_at DateTime @default(now())
+
+  round_number      Int
+  action_index      Int     @default(0)
+  validator_address String  @db.VarChar(42)
+  rollup_address    String  @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  slash_amount      Decimal @db.Decimal(30, 2)
+  vote_count        Int?
+  quorum_threshold  Int?
+
+  payload_address String? @db.VarChar(42)
+
+  // Execution tracking
+  deployment_tx_hash String?   @db.VarChar(66)
+  deployment_block   BigInt?
+  executed_at        DateTime?
+
+  // Metadata
+  computed_at        DateTime @default(now())
+  contract_address   String   @db.VarChar(42)
+  tally_block_number BigInt?
+
+  @@unique([round_number, action_index, validator_address, rollup_address], name: "unique_slash_action_per_round")
+  @@index([round_number])
+  @@index([action_index])
+  @@index([validator_address])
+  @@index([slash_amount])
+  @@index([payload_address])
+  @@index([deployment_tx_hash])
+  @@index([executed_at])
+  @@index([computed_at])
+  @@index([contract_address])
+  @@index([rollup_address])
+}

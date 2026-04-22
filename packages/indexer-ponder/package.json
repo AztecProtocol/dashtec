@@ -1,0 +1,34 @@
+{
+  "name": "@dashtec/indexer-ponder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ponder.schema": "./ponder.schema.ts"
+  },
+  "scripts": {
+    "dev": ". ./.env 2>/dev/null; ponder db prune ${DATABASE_SCHEMA:-ponder_dev} && ponder dev --schema ${DATABASE_SCHEMA:-ponder_dev}",
+    "start": "ponder db prune ${DATABASE_SCHEMA:-ponder_prod} && ponder start --schema ${DATABASE_SCHEMA:-ponder_prod}",
+    "codegen": "ponder codegen",
+    "build": "ponder codegen",
+    "prune": "ponder db prune",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .ponder generated node_modules"
+  },
+  "dependencies": {
+    "@dashtec/database": "workspace:*",
+    "@dashtec/shared-types": "workspace:*",
+    "@dashtec/shared-utils": "workspace:*",
+    "dotenv": "^16.4.7",
+    "hono": "^4.10.6",
+    "ponder": "^0.15.11",
+    "viem": "^2.31.6",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

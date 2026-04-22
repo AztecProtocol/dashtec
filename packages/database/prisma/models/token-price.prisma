@@ -1,0 +1,12 @@
+model TokenPrice {
+  id         String   @id @default(uuid()) @db.Uuid
+  symbol     String   @db.VarChar(20)
+  price_usd  Float
+  timestamp  BigInt
+  source     String   @db.VarChar(50) @default("hyperliquid")
+  created_at DateTime @default(now())
+
+  @@unique([symbol, timestamp])
+  @@index([symbol])
+  @@index([timestamp])
+}

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "declaration": false,
+    "declarationMap": false,
+    "paths": {
+      "@/*": ["./ponder-env.d.ts", "./src/*"]
+    }
+  },
+  "include": ["src/**/*", "ponder.config.ts", "ponder.schema.ts", "ponder-env.d.ts", "tests/**/*"],
+  "exclude": ["node_modules"]
+}

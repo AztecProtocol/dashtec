@@ -1,0 +1,57 @@
+{
+  "name": "dashtec-monorepo",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"turbo run dev\" \"pnpm sentinel-proxy:dev\"",
+    "dev:web": "pnpm --filter @dashtec/web dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "audit": "pnpm audit --audit-level moderate",
+    "audit:fix": "pnpm audit --fix",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "pnpm --filter @dashtec/database db:migrate",
+    "db:reset": "pnpm --filter @dashtec/database db:reset",
+    "db:studio": "pnpm --filter @dashtec/database db:studio",
+    "db:push": "pnpm --filter @dashtec/database db:push",
+    "db:prepare": "pnpm db:generate && pnpm db:migrate",
+    "setup:local": "POSTGRES_PORT=5433 REDIS_PORT=6380 ./scripts/setup-databases.sh",
+    "env:propagate": "node scripts/env/propagate-all.js",
+    "sentinel-proxy:dev": "cd services/sentinel-proxy-go && make watch",
+    "sdk:push": "git subtree push --prefix=packages/aztec-rpc-sdk aztec-rpc-sdk main",
+    "sdk:pull": "git subtree pull --prefix=packages/aztec-rpc-sdk aztec-rpc-sdk main --squash",
+    "migrate:rollup-data": "pnpm --filter @dashtec/database exec tsx ../../scripts/migrate-rollup-data.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "tsx": "^4.19.2",
+    "turbo": "^2.6.3",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild@<=0.24.2": ">=0.25.0",
+      "hono@<4.9.7": ">=4.9.7",
+      "hono@>=1.1.0 <4.10.2": ">=4.10.2",
+      "hono@<4.10.3": ">=4.10.3",
+      "valibot@>=0.31.0 <1.2.0": ">=1.2.0",
+      "next@>=16.0.0-beta.0 <16.0.9": ">=16.0.9"
+    }
+  },
+  "dependencies": {
+    "pg": "^8.20.0"
+  }
+}

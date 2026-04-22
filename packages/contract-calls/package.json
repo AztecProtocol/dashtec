@@ -1,0 +1,27 @@
+{
+  "name": "@dashtec/contract-calls",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@dashtec/shared-types": "workspace:*",
+    "@dashtec/shared-utils": "workspace:*",
+    "viem": "^2.21.54"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.9",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}

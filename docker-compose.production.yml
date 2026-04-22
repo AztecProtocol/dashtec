@@ -1,0 +1,77 @@
+version: "3.8"
+
+# Production docker-compose for deployment VMs
+# This file uses pre-built images from a registry
+# Copy this file and .env files to your deployment VMs
+
+services:
+  # Web Application
+  web:
+    image: ${REGISTRY:-your-registry.example.com}/dashtec-web:${VERSION:-latest}
+    container_name: dashtec-web
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    env_file:
+      - apps/web/.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Ponder Indexer
+  indexer-ponder:
+    image: ${REGISTRY:-your-registry.example.com}/dashtec-indexer-ponder:${VERSION:-latest}
+    container_name: dashtec-indexer-ponder
+    ports:
+      - "${PONDER_PORT:-42069}:42069"
+    env_file:
+      - packages/indexer-ponder/.env
+    environment:
+      DATABASE_SCHEMA: ponder_prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:42069/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Materializer (Ponder → Prisma data pipeline)
+  materializer:
+    image: ${REGISTRY:-your-registry.example.com}/dashtec-materializer:${VERSION:-latest}
+    container_name: dashtec-materializer
+    env_file:
+      - packages/materializer/.env
+    environment:
+      PONDER_SCHEMA: ponder_prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -x node || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # Custom Indexer (Runs all collectors)
+  indexer-custom:
+    image: ${REGISTRY:-your-registry.example.com}/dashtec-indexer-custom:${VERSION:-latest}
+    container_name: dashtec-indexer-custom
+    # Default command runs all collectors
+    ports:
+      - "${COLLECTOR_VALIDATOR_STATS_PORT:-4000}:4000"
+      - "${COLLECTOR_VALIDATOR_LIST_PORT:-4001}:4001"
+      - "${COLLECTOR_EPOCH_INTEGRITY_PORT:-4002}:4002"
+      - "${COLLECTOR_VALIDATOR_MIGRATION_PORT:-4003}:4003"
+      - "${COLLECTOR_PROVIDER_LIST_PORT:-4004}:4004"
+    env_file:
+      - packages/indexer-custom/.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

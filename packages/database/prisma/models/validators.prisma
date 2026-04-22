@@ -1,0 +1,246 @@
+model Validator {
+  address              String    @id @db.VarChar(42)
+  validator_hex_index  String    @db.VarChar(66)
+  withdrawer_address   String?   @db.VarChar(42)
+  rollup_address       String    @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  withdrawable_balance Decimal?  @db.Decimal(30, 2)
+  activation_date      DateTime?
+  exit_date            DateTime?
+  status               String    @db.VarChar(20)
+  stake_balance        Decimal?  @db.Decimal(30, 2)
+  first_seen_at        DateTime  @default(now())
+  last_updated_at      DateTime  @updatedAt
+  x_handle             String?   @db.VarChar(50)
+  x_user_id            String?   @db.VarChar(50)
+  x_image_url          String?   @db.VarChar(500)
+  discordId            String?   @db.VarChar(50)
+  discordUsername      String?   @db.VarChar(100)
+  discordAvatar        String?   @db.VarChar(500)
+  name                 String?   @db.VarChar(100)
+
+  // Relations
+  attestations     ValidatorAttestation[]
+  epochPerformance ValidatorEpochPerformance[]
+
+  @@index([status])
+  @@index([address])
+  @@index([validator_hex_index])
+}
+
+model ValidatorQueue {
+  id                 String   @id @default(uuid()) @db.Uuid
+  attester_address   String   @db.VarChar(42)
+  withdrawer_address String   @db.VarChar(42)
+  rollup_address     String   @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  queued_at          DateTime @default(now())
+  block_number       BigInt
+  transaction_hash   String   @db.VarChar(66)
+  log_index          Int
+
+  @@unique([transaction_hash, log_index], name: "unique_validator_queue_transaction_log")
+  @@index([attester_address])
+  @@index([queued_at])
+  @@index([block_number])
+  @@index([rollup_address])
+}
+
+model ValidatorAttestation {
+  id                String   @id @default(uuid()) @db.Uuid
+  slot_number       BigInt
+  epoch_number      BigInt
+  validator_address String   @db.VarChar(42)
+  rollup_address    String   @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  committee_index   Int?
+  timestamp         DateTime @default(now())
+  status            String   @db.VarChar(20)
+
+  // Relations
+  epoch     Epoch     @relation(fields: [epoch_number, rollup_address], references: [epoch_number, rollup_address])
+  validator Validator @relation(fields: [validator_address], references: [address])
+
+  @@unique([slot_number, validator_address, rollup_address], name: "composite_attestation_key")
+  @@index([slot_number])
+  @@index([epoch_number])
+  @@index([validator_address])
+  @@index([rollup_address])
+}
+
+model ValidatorEpochPerformance {
+  id                      String   @id @default(uuid()) @db.Uuid
+  epoch_number            BigInt
+  validator_address       String   @db.VarChar(42)
+  rollup_address          String   @default("0x0000000000000000000000000000000000000000") @db.VarChar(42)
+  attestations_successful Int      @default(0)
+  attestations_missed     Int      @default(0)
+  checkpoints_proposed    Int      @default(0)
+  checkpoints_mined       Int      @default(0)
+  checkpoints_missed      Int      @default(0)
+  blocks_missed           Int      @default(0)
+  calculated_at           DateTime @default(now())
+
+  // Relations
+  epoch     Epoch     @relation(fields: [epoch_number, rollup_address], references: [epoch_number, rollup_address])
+  validator Validator @relation(fields: [validator_address], references: [address])
+
+  @@unique([epoch_number, validator_address, rollup_address], name: "unique_validator_epoch_performance")
+  @@index([epoch_number])
+  @@index([validator_address])
+  @@index([rollup_address])
+}
+
+model MaterializedValidatorDeposit {
+  id                 String @id
+  attester_address   String @db.VarChar(42)
+  withdrawer_address String @db.VarChar(42)
+  rollup_address     String @db.VarChar(42)
+  amount             String @db.VarChar(30)
+  block_number       BigInt
+  log_index          Int
+  transaction_hash   String @db.Char(66)
+  timestamp          BigInt?
+  extra              Json?
+
+  @@unique([transaction_hash, log_index], name: "unique_mat_deposit_tx_log")
+  @@index([attester_address])
+  @@index([rollup_address])
+  @@index([block_number])
+}
+
+model MaterializedValidatorGseDeposit {
+  id                      String  @id
+  attester_address        String  @db.VarChar(42)
+  withdrawer_address      String  @db.VarChar(42)
+  instance_address        String  @db.VarChar(42)
+  move_with_latest_rollup Boolean
+  block_number            BigInt
+  log_index               Int
+  transaction_hash        String  @db.Char(66)
+  timestamp               BigInt?
+  extra                   Json?
+
+  @@unique([transaction_hash, log_index], name: "unique_mat_gse_deposit_tx_log")
+  @@index([attester_address])
+  @@index([instance_address])
+  @@index([block_number])
+}
+
+model MaterializedValidatorFailedDeposit {
+  id                 String @id
+  attester_address   String @db.VarChar(42)
+  withdrawer_address String @db.VarChar(42)
+  rollup_address     String @db.VarChar(42)
+  block_number       BigInt
+  log_index          Int
+  transaction_hash   String @db.Char(66)
+  timestamp          BigInt?
+  extra              Json?
+
+  @@unique([transaction_hash, log_index], name: "unique_mat_failed_deposit_tx_log")
+  @@index([attester_address])
+  @@index([rollup_address])
+  @@index([block_number])
+}
+
+model MaterializedValidatorQueued {
+  id                 String @id
+  attester_address   String @db.VarChar(42)
+  withdrawer_address String @db.VarChar(42)
+  rollup_address     String @db.VarChar(42)
+  block_number       BigInt
+  log_index          Int
+  transaction_hash   String @db.Char(66)
+  timestamp          BigInt?
+
+  @@unique([transaction_hash, log_index], name: "unique_mat_queued_tx_log")
+  @@index([attester_address])
+  @@index([rollup_address])
+  @@index([block_number])
+}
+
+model MaterializedValidatorWithdrawInitiated {
+  id                String @id
+  attester_address  String @db.VarChar(42)
+  recipient_address String @db.VarChar(42)
+  rollup_address    String @db.VarChar(42)
+  amount            String @db.VarChar(30)
+  block_number      BigInt
+  log_index         Int
+  transaction_hash  String @db.Char(66)
+  timestamp         BigInt?
+
+  @@unique([transaction_hash, log_index], name: "unique_mat_withdraw_init_tx_log")
+  @@index([attester_address])
+  @@index([rollup_address])
+  @@index([block_number])
+}
+
+model MaterializedValidatorWithdrawFinalized {
+  id                String @id
+  attester_address  String @db.VarChar(42)
+  recipient_address String @db.VarChar(42)
+  rollup_address    String @db.VarChar(42)
+  amount            String @db.VarChar(30)
+  block_number      BigInt
+  log_index         Int
+  transaction_hash  String @db.Char(66)
+  timestamp         BigInt?
+
+  @@unique([transaction_hash, log_index], name: "unique_mat_withdraw_final_tx_log")
+  @@index([attester_address])
+  @@index([rollup_address])
+  @@index([block_number])
+}
+
+model MaterializedValidatorStakeHistory {
+  id               String @id
+  attester_address String @db.VarChar(42)
+  rollup_address   String @db.VarChar(42)
+  event_type       String @db.VarChar(20) // 'deposit' | 'gse_deposit' | 'slashed' | 'withdraw'
+  amount           String @db.VarChar(30)
+  block_number     BigInt
+  log_index        Int
+  transaction_hash String @db.Char(66)
+  timestamp        BigInt?
+
+  @@unique([transaction_hash, log_index], name: "unique_mat_stake_history_tx_log")
+  @@index([attester_address])
+  @@index([rollup_address])
+  @@index([block_number])
+  @@index([event_type])
+}
+
+model ValidatorRollup {
+  id                  String   @id @default(uuid()) @db.Uuid
+  address             String   @db.VarChar(42)
+  rollup_address      String   @db.VarChar(42)
+  migration_status    String   @default("active") @db.VarChar(20)
+  deposit_type        String   @db.VarChar(20)
+  block_number        BigInt
+  transaction_hash    String   @db.VarChar(66)
+  log_index           Int
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  @@unique([address, rollup_address], name: "unique_validator_rollup")
+  @@unique([transaction_hash, log_index], name: "unique_validator_rollup_tx_log")
+  @@index([rollup_address])
+  @@index([address])
+  @@index([migration_status])
+}
+
+model ValidatorMigration {
+  id                  String   @id @default(uuid()) @db.Uuid
+  validator_address   String   @unique @db.VarChar(42)
+  found_in_source     Boolean  @default(false)
+  had_social_data     Boolean  @default(false)
+  was_updated         Boolean  @default(false)
+  already_had_social  Boolean  @default(false)
+  updated_fields      Json?
+  migration_timestamp DateTime @default(now())
+  processed_by        String   @default("validator-migration-collector") @db.VarChar(100)
+
+  @@index([validator_address])
+  @@index([migration_timestamp])
+  @@index([found_in_source])
+  @@index([was_updated])
+}
