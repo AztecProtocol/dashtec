@@ -1,54 +1,81 @@
-# Dashtec Monorepo
+# Dashtec
 
-Monorepo for the Dashtec Aztec Dashboard project, containing the web app and multiple indexer services.
+Real-time monitoring and analytics platform for the [Aztec](https://aztec.network) blockchain. Indexes on-chain events, materializes data, and serves a dashboard for validators, providers, governance, and network health.
 
-## Documentation
+## Architecture
 
-- [Deployment Guide](DEPLOYMENT.md) - Docker Compose, Multi-VM, and PM2 deployment.
-- [Database Setup](DATABASE_SETUP.md) - PostgreSQL and Redis setup guide.
-
-## License
-
-Private - Dashtec Project
+```
+Blockchain --> Ponder Indexer --> Materializer --> PostgreSQL --> REST API --> Dashboard
+                                       ^
+                                       |
+                              Custom Collectors
+```
 
 ## Project Structure
 
 ```
-dashtec-monorepo/
-├── apps/
-│   └── web/                    # Next.js web application (to be migrated from dashtec-app)
-│
-├── packages/
-│   ├── database/              # Shared Prisma database package
-│   ├── shared-types/          # Shared TypeScript types
-│   ├── shared-utils/          # Shared utility functions
-│   ├── indexer-ponder/        # Ponder-based event indexer
-│   └── indexer-custom/        # Custom logic indexers
-│
-├── package.json               # Root workspace config
-├── pnpm-workspace.yaml        # pnpm workspace definition
-├── turbo.json                 # Turbo build configuration
-└── tsconfig.base.json         # Base TypeScript config
+apps/
+  web/                  # Next.js dashboard + REST API
+
+packages/
+  database/             # Prisma schema, migrations, client
+  shared-types/         # ABIs, interfaces, type definitions
+  shared-utils/         # Formatters, validators, RPC helpers
+  logger/               # Structured logging (Winston)
+  contract-calls/       # Typed contract call factories
+  aztec-rpc-sdk/        # Aztec node RPC client
+  indexer-ponder/       # Blockchain event handlers
+  indexer-custom/       # Custom collectors (validator stats, epoch integrity)
+  materializer/         # Syncs Ponder data into PostgreSQL
 ```
 
 ## Tech Stack
 
-- **Package Manager**: pnpm (v9.0.0+)
-- **Build System**: Turbo
-- **Runtime**: Node.js (v20.0.0+)
-- **Database**: PostgreSQL + Prisma
-- **Web Framework**: Next.js 15
-- **Indexers**: Ponder (v0.15.11) + Custom TypeScript collectors
-- **Blockchain**: Viem (v2.31.6)
+- **Monorepo**: pnpm 9 + Turborepo
+- **Frontend**: Next.js 16 (App Router, React 19, TanStack Query, Tailwind, Framer Motion)
+- **Indexer**: Ponder (blockchain event indexing) + Custom collectors
+- **Database**: PostgreSQL 16 + Prisma 7
+- **Runtime**: Node.js >= 20, TypeScript strict, ESM everywhere
 
-## Getting Started
-
-### Prerequisites
+## Quick Start
 
 ```bash
-# Install pnpm globally
-npm install -g pnpm@9.0.0
+# Install dependencies
+pnpm install
 
-# Ensure Node.js 20+
-node --version
+# Start databases
+docker compose --profile mainnet up -d postgres-mainnet redis-mainnet
+
+# Configure environment
+cp .environment/mainnet/config.example.json .environment/mainnet/config.json
+# Edit config.json with your RPC endpoints, contract addresses, etc.
+
+# Propagate config to all packages
+pnpm env:propagate mainnet
+
+# Generate Prisma client and run migrations
+pnpm db:generate
+pnpm db:migrate
+
+# Start all services
+pnpm dev
 ```
+
+See [docs/SETUP.md](docs/SETUP.md) for the full setup guide.
+
+## Commands
+
+```bash
+pnpm dev                              # Start all services
+pnpm build                            # Build all packages
+pnpm turbo typecheck                  # Typecheck everything
+pnpm db:generate                      # Generate Prisma client
+pnpm db:migrate                       # Run database migrations
+pnpm db:studio                        # Open Prisma Studio
+pnpm env:propagate <mainnet|testnet>  # Propagate env config to all packages
+pnpm --filter @dashtec/<pkg> dev      # Dev a single package
+```
+
+## License
+
+MIT
