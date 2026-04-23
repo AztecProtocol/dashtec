@@ -37,53 +37,6 @@ All environment variables are managed through a single config file per network. 
 cp .environment/mainnet/config.example.json .environment/mainnet/config.json
 ```
 
-Edit `.environment/mainnet/config.json` with your values:
-
-```jsonc
-{
-  "network": {
-    "type": "mainnet",
-    "chainId": 1
-  },
-  "database": {
-    "url": "postgresql://dashtec:dashtec@localhost:5432/dashtec",
-    "replicaUrl": "postgresql://dashtec:dashtec@localhost:5432/dashtec"
-  },
-  "redis": {
-    "url": "redis://localhost:6379"
-  },
-  "rpc": {
-    "ethereumUrls": "https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY"
-  },
-  "sentinel": {
-    "proxyUrl": "http://localhost:8080",
-    // ...
-  },
-  "contracts": {
-    "rollupAddress": "0x...",
-    "governanceAddress": "0x...",
-    "governanceProposerAddress": "0x...",
-    "slashingProposerAddress": "0x...",
-    "gseAddress": "0x...",
-    "stakingRegistryAddress": "0x...",
-    "registryAddress": "0x..."
-  },
-  "collectors": {
-    // polling intervals and batch sizes for each collector
-  },
-  "app": {
-    "url": "http://localhost:3000",
-    "auth": {
-      "discord": { "clientId": "", "clientSecret": "" },
-      "x": { "clientId": "", "clientSecret": "" },
-      "sessionPassword": "min-32-chars-generate-with-openssl-rand-hex-32"
-    }
-  }
-}
-```
-
-See `.environment/mainnet/config.example.json` for the full schema.
-
 ### Step 2: Propagate to all packages
 
 ```bash
@@ -100,13 +53,210 @@ This reads your `config.json` and generates `.env` files for each package:
 | `packages/indexer-custom` | `.env` |
 | `packages/materializer` | `.env` |
 
-You can also propagate for testnet:
+For testnet:
 
 ```bash
+cp .environment/testnet/config.example.json .environment/testnet/config.json
 pnpm env:propagate testnet
 ```
 
-## 4. Database Setup
+## 4. Configuration Reference
+
+### `network`
+
+| Property | Type | Example | Description |
+|----------|------|---------|-------------|
+| `type` | string | `"mainnet"` or `"sepolia"` | Network identifier. Determines chain-specific behavior across all packages. |
+| `chainId` | number | `1` (mainnet), `11155111` (sepolia) | Ethereum chain ID used by the Ponder indexer for RPC calls. |
+
+**Used by:** indexer-ponder, web app
+
+### `database`
+
+| Property | Type | Example | Description |
+|----------|------|---------|-------------|
+| `url` | string | `"postgresql://user:pass@host:5432/dashtec"` | Primary PostgreSQL connection URL. Used by all packages for reads and writes. |
+| `replicaUrl` | string | `"postgresql://user:pass@replica:5432/dashtec"` | Read replica URL. Optional — falls back to `url` if not set. Used by the web app and indexer-custom for read-heavy queries. |
+
+**Used by:** all packages
+
+### `redis`
+
+| Property | Type | Example | Description |
+|----------|------|---------|-------------|
+| `url` | string | `"redis://localhost:6379"` | Redis connection URL. Used for caching in the web app and indexer-custom. Optional — the app works without it but with higher database load. |
+
+**Used by:** web app, indexer-custom, indexer-ponder
+
+### `rpc`
+
+| Property | Type | Example | Description |
+|----------|------|---------|-------------|
+| `ethereumUrls` | string | `"https://eth-mainnet.g.alchemy.com/v2/KEY"` | Comma-separated Ethereum RPC URLs. The Ponder indexer uses these to watch on-chain events. The indexer-custom uses them for contract reads. Multiple URLs provide failover. |
+
+**Used by:** indexer-ponder, indexer-custom
+
+### `sentinel`
+
+The sentinel is a reverse proxy that sits in front of Aztec node RPC endpoints, providing load balancing and health checking.
+
+| Property | Type | Example | Description |
+|----------|------|---------|-------------|
+| `proxyUrl` | string | `"http://sentinel-proxy:8080"` | Base URL of the sentinel proxy. The web app appends `/pruned` for pruned node access. The indexer-custom appends `/archiver` for archiver access. |
+| `backends.archiverUrl` | string | `"https://archiver.example.com/rpc"` | Aztec archiver node RPC URL(s). Comma-separated for multiple backends. Archiver nodes store full historical data. |
+| `backends.prunedUrl` | string | `"https://pruned.example.com/rpc"` | Aztec pruned node RPC URL(s). Comma-separated for multiple backends. Pruned nodes store recent data only. |
+| `proxy.port` | number | `8080` | Port the sentinel proxy listens on. |
+| `proxy.healthCheckIntervalMs` | number | `30000` | How often the proxy health-checks its backend nodes (ms). |
+| `proxy.integrityCheckIntervalMs` | number | `60000` | How often the proxy verifies data consistency across backends (ms). |
+| `proxy.integrityCheckEpochs` | number | `10` | Number of recent epochs to compare during integrity checks. |
+| `proxy.requestTimeoutMs` | number | `30000` | Timeout for individual RPC requests forwarded to backends (ms). |
+| `proxy.slotsPerEpoch` | number | `32` | Aztec network parameter — slots per epoch. |
+| `proxy.archiverThresholdEpochs` | number | `100` | Epoch lag threshold before the proxy considers an archiver unhealthy. |
+| `proxy.expectedValidators` | number | `24` | Expected validator count for integrity checks. |
+
+**Used by:** web app (proxyUrl), indexer-custom (proxyUrl)
+
+### `contracts`
+
+Aztec protocol contract addresses on Ethereum. These are used by the Ponder indexer to watch events and by the web app for direct contract reads.
+
+| Property | Type | Example | Description |
+|----------|------|---------|-------------|
+| `rollupAddress` | string | `"0x603b..."` | Aztec Rollup contract. The core contract that tracks epochs, validators, and block proposals. Used by all packages. |
+| `governanceAddress` | string | `"0x1102..."` | Governance contract for on-chain proposals and voting. |
+| `governanceProposerAddress` | string | `"0x06Ef..."` | Governance proposer contract — handles governance payload submission. |
+| `slashingProposerAddress` | string | `"0x7a31..."` | Slashing proposer contract — handles slashing payload submission. |
+| `slashFactoryAddress` | string | `"0x..."` | Slash factory contract. Can be empty (`"0x"`) if not deployed. |
+| `gseAddress` | string | `"0xa92e..."` | GSE (Governance State Extension) contract — tracks governance state. |
+| `stakingRegistryAddress` | string | `"0x042d..."` | Staking registry contract — stores validator staking info, provider registrations, and commission rates. |
+| `registryAddress` | string | `"0x0000..."` | Registry contract. Set to zero address if not in use. |
+
+**Used by:** indexer-ponder (all), web app (rollup, slashing, governance, staking registry), indexer-custom (rollup), materializer (rollup)
+
+### `collectors`
+
+Configuration for the custom indexer's collector services. Each collector runs on its own polling loop.
+
+#### `collectors.validatorStats`
+
+Collects per-epoch performance data (attestations, proposals) for each validator by querying the Aztec archiver node.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `pollIntervalMs` | number | `300000` | Polling interval (ms). How often to check for new epochs to process. |
+| `maxPastEpochs` | number | `10` | Maximum number of past epochs to backfill when catching up. |
+| `batchSize` | number | `10` | Number of validators to process per batch within an epoch. |
+
+#### `collectors.validatorList`
+
+Syncs the current validator set from the staking registry contract.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `pollIntervalMs` | number | `60000` | Polling interval (ms). |
+| `batchSize` | number | `50` | Number of validators to fetch per RPC batch call. |
+
+#### `collectors.epochIntegrity`
+
+Verifies that indexed epoch data is complete and consistent by cross-referencing with the archiver node.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `pollIntervalMs` | number | `600000` | Polling interval (ms). |
+| `batchSize` | number | `20` | Number of epochs to verify per cycle. |
+| `epochsToCheck` | number | `100` | How many recent epochs to include in integrity checks. |
+
+#### `collectors.validatorMigration`
+
+Handles validator data migration between rollup versions. Only needed during rollup upgrades.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `enabled` | boolean | `false` | Whether the migration collector runs. Set to `true` during rollup upgrades. |
+| `pollIntervalMs` | number | `3600000` | Polling interval (ms). |
+| `batchSize` | number | `50` | Number of validators to migrate per batch. |
+| `sourceDbUrl` | string | `""` | PostgreSQL connection URL of the source database to migrate from. Required when `enabled` is `true`. |
+
+#### `collectors.epochAggregates`
+
+Recomputes epoch-level aggregate stats (total attestations, proposals) to repair any gaps from missed processing.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `pollIntervalMs` | number | `300000` | Polling interval (ms). |
+| `batchSize` | number | `10` | Number of epochs to recompute per cycle. |
+| `epochsToRepair` | number | `50` | How many recent epochs to scan for missing aggregates. |
+
+#### `collectors.providerList` (optional)
+
+Syncs provider metadata from an external staking app API.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `apiUrl` | string | `""` | External staking app API URL to fetch provider data from. |
+| `pollIntervalMs` | number | `60000` | Polling interval (ms). |
+
+**Used by:** indexer-custom
+
+### `ponder`
+
+Configuration for the Ponder blockchain event indexer.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `port` | number | `42069` | HTTP port for the Ponder dev server and health endpoint. |
+| `databaseSchema` | string | `"ponder_dev"` | PostgreSQL schema name where Ponder stores its indexed data. Use `"ponder_prod"` in production. The materializer reads from this schema. |
+| `maxHealthcheckDuration` | number | `240` | Maximum seconds for the Ponder health check to report healthy during initial sync. |
+| `startBlock` | number | `20000000` | Ethereum block number to start indexing from. Set this to the deployment block of your earliest contract to avoid scanning unnecessary blocks. |
+| `redis.url` | string | — | Redis URL for Ponder's internal caching. Optional. |
+
+**Used by:** indexer-ponder, materializer (databaseSchema)
+
+### `app`
+
+Configuration for the Next.js web dashboard.
+
+| Property | Type | Example | Description |
+|----------|------|---------|-------------|
+| `url` | string | `"https://dashtec.xyz"` | Public URL of the app. Used for OAuth callback URLs and absolute link generation. |
+| `port` | number | `3000` | Port the Next.js server listens on. |
+| `ethereumExplorerUrl` | string | `"https://etherscan.io"` | Base URL for Ethereum block explorer links (transactions, addresses). |
+| `aztecScanUrl` | string | `"https://aztecscan.xyz"` | Base URL for Aztec block explorer links. Optional. |
+| `rateLimitingEnabled` | boolean | `true` | Whether API rate limiting is active. Disable for development. |
+| `domains.mainnet` | string | `"dashtec.xyz"` | Domain for mainnet deployment. Used for network switching in the UI. |
+| `domains.sepolia` | string | `"testnet.dashtec.xyz"` | Domain for testnet deployment. |
+
+#### `app.auth`
+
+OAuth credentials for validator profile linking. Users can link their X (Twitter) and Discord accounts to their validator profiles.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `discord.clientId` | string | Discord OAuth2 application client ID. Create at [discord.com/developers](https://discord.com/developers/applications). |
+| `discord.clientSecret` | string | Discord OAuth2 application client secret. |
+| `x.clientId` | string | X (Twitter) OAuth 2.0 client ID. Create at [developer.x.com](https://developer.x.com/en/portal/dashboard). |
+| `x.clientSecret` | string | X OAuth 2.0 client secret. |
+| `sessionPassword` | string | Secret key for session encryption. Minimum 32 characters. Generate with `openssl rand -hex 32`. |
+
+**Used by:** web app
+
+### `logging`
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `level` | string | `"info"` | Log level: `"error"`, `"warn"`, `"info"`, or `"debug"`. |
+
+**Used by:** all packages
+
+### `nodeEnv`
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `nodeEnv` | string | `"production"` | Node.js environment. `"development"`, `"production"`, or `"test"`. |
+
+**Used by:** all packages
+
+## 5. Database Setup
 
 ### Run Prisma migrations
 
@@ -130,7 +280,7 @@ pnpm db:reset       # Reset database (drops all data)
 
 Schema files are split across `packages/database/prisma/models/*.prisma`.
 
-## 5. Start Development
+## 6. Start Development
 
 ```bash
 pnpm dev
