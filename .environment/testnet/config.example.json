@@ -14,21 +14,7 @@
     "ethereumUrls": "https://sepolia.infura.io/v3/YOUR_INFURA_KEY"
   },
   "sentinel": {
-    "proxyUrl": "http://sentinel-proxy:8080",
-    "backends": {
-      "archiverUrl": "https://testnet-archiver.example.com/rpc",
-      "prunedUrl": "https://testnet-sentinel.example.com/rpc"
-    },
-    "proxy": {
-      "port": 8080,
-      "healthCheckIntervalMs": 30000,
-      "integrityCheckIntervalMs": 60000,
-      "integrityCheckEpochs": 10,
-      "requestTimeoutMs": 30000,
-      "slotsPerEpoch": 32,
-      "archiverThresholdEpochs": 100,
-      "expectedValidators": 24
-    }
+    "proxyUrl": "http://your-aztec-node:8080"
   },
   "contracts": {
     "rollupAddress": "0xebd99ff0ff6677205509ae73f93d0ca52ac85d67",

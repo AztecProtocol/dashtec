@@ -14,21 +14,7 @@
     "ethereumUrls": "https://mainnet.infura.io/v3/YOUR_INFURA_KEY"
   },
   "sentinel": {
-    "proxyUrl": "http://sentinel-proxy:8080",
-    "backends": {
-      "archiverUrl": "https://mainnet-archiver.example.com/rpc",
-      "prunedUrl": "https://mainnet-sentinel.example.com/rpc"
-    },
-    "proxy": {
-      "port": 8080,
-      "healthCheckIntervalMs": 30000,
-      "integrityCheckIntervalMs": 60000,
-      "integrityCheckEpochs": 10,
-      "requestTimeoutMs": 30000,
-      "slotsPerEpoch": 32,
-      "archiverThresholdEpochs": 100,
-      "expectedValidators": 24
-    }
+    "proxyUrl": "http://your-aztec-node:8080"
   },
   "contracts": {
     "rollupAddress": "0x603bb2c05D474794ea97805e8De69bCcFb3bCA12",

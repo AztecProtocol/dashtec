@@ -98,23 +98,13 @@ pnpm env:propagate testnet
 
 ### `sentinel`
 
-The sentinel is a reverse proxy that sits in front of Aztec node RPC endpoints, providing load balancing and health checking.
+URL configuration for the Aztec node RPC endpoint. This can point directly to an Aztec node or to a reverse proxy that load-balances across multiple nodes.
 
 | Property | Type | Example | Description |
 |----------|------|---------|-------------|
-| `proxyUrl` | string | `"http://sentinel-proxy:8080"` | Base URL of the sentinel proxy. The web app appends `/pruned` for pruned node access. The indexer-custom appends `/archiver` for archiver access. |
-| `backends.archiverUrl` | string | `"https://archiver.example.com/rpc"` | Aztec archiver node RPC URL(s). Comma-separated for multiple backends. Archiver nodes store full historical data. |
-| `backends.prunedUrl` | string | `"https://pruned.example.com/rpc"` | Aztec pruned node RPC URL(s). Comma-separated for multiple backends. Pruned nodes store recent data only. |
-| `proxy.port` | number | `8080` | Port the sentinel proxy listens on. |
-| `proxy.healthCheckIntervalMs` | number | `30000` | How often the proxy health-checks its backend nodes (ms). |
-| `proxy.integrityCheckIntervalMs` | number | `60000` | How often the proxy verifies data consistency across backends (ms). |
-| `proxy.integrityCheckEpochs` | number | `10` | Number of recent epochs to compare during integrity checks. |
-| `proxy.requestTimeoutMs` | number | `30000` | Timeout for individual RPC requests forwarded to backends (ms). |
-| `proxy.slotsPerEpoch` | number | `32` | Aztec network parameter — slots per epoch. |
-| `proxy.archiverThresholdEpochs` | number | `100` | Epoch lag threshold before the proxy considers an archiver unhealthy. |
-| `proxy.expectedValidators` | number | `24` | Expected validator count for integrity checks. |
+| `proxyUrl` | string | `"http://your-aztec-node:8080"` | Base URL of the Aztec RPC endpoint. The web app appends `/pruned` for pruned node access. The indexer-custom appends `/archiver` for archiver access. |
 
-**Used by:** web app (proxyUrl), indexer-custom (proxyUrl)
+**Used by:** web app, indexer-custom
 
 ### `contracts`
 

@@ -15,7 +15,7 @@ services:
       DATABASE_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
       REDIS_URL: redis://:dashtec@${REDIS_HOST:-redis-mainnet}:6379
       DATABASE_URL_REPLICA: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
-      NEXT_SENTINEL_URL: ${NEXT_SENTINEL_URL:-http://sentinel-proxy:8080/pruned}
+      NEXT_SENTINEL_URL: ${NEXT_SENTINEL_URL}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
@@ -69,7 +69,7 @@ services:
       DATABASE_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
       DATABASE_READ_REPLICA_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
       REDIS_URL: redis://:dashtec@${REDIS_HOST:-redis-mainnet}:6379
-      VALIDATOR_STATS_RPC_URL: ${VALIDATOR_STATS_RPC_URL:-http://sentinel-proxy:8080/archiver}
+      VALIDATOR_STATS_RPC_URL: ${VALIDATOR_STATS_RPC_URL}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
@@ -101,26 +101,6 @@ services:
     profiles:
       - mainnet
 
-  sentinel-proxy:
-    build:
-      context: .
-      dockerfile: services/sentinel-proxy-go/Dockerfile
-    image: dashtec-sentinel-proxy:latest
-    container_name: dashtec-sentinel-proxy
-    ports:
-      - "${SENTINEL_PROXY_PORT:-8080}:8080"
-    env_file:
-      - services/sentinel-proxy-go/.env
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/ready"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    profiles:
-      - mainnet
-
   # Testnet Web
   web-testnet:
     build:
@@ -136,7 +116,7 @@ services:
       DATABASE_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
       REDIS_URL: redis://:dashtec@redis-testnet:6379
       DATABASE_URL_REPLICA: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
-      NEXT_SENTINEL_URL: ${NEXT_SENTINEL_URL_TESTNET:-http://sentinel-proxy-testnet:8080/pruned}
+      NEXT_SENTINEL_URL: ${NEXT_SENTINEL_URL_TESTNET}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
@@ -191,7 +171,7 @@ services:
       DATABASE_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
       DATABASE_READ_REPLICA_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
       REDIS_URL: redis://:dashtec@redis-testnet:6379
-      VALIDATOR_STATS_RPC_URL: ${VALIDATOR_STATS_RPC_URL_TESTNET:-http://sentinel-proxy-testnet:8080/archiver}
+      VALIDATOR_STATS_RPC_URL: ${VALIDATOR_STATS_RPC_URL_TESTNET}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
@@ -221,27 +201,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
-    profiles:
-      - testnet
-
-  # Testnet Sentinel Proxy
-  sentinel-proxy-testnet:
-    build:
-      context: .
-      dockerfile: services/sentinel-proxy-go/Dockerfile
-    image: dashtec-sentinel-proxy:testnet
-    container_name: dashtec-sentinel-proxy-testnet
-    ports:
-      - "${SENTINEL_PROXY_TESTNET_PORT:-8081}:8080"
-    env_file:
-      - services/sentinel-proxy-go/.env
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/ready"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
     profiles:
       - testnet
 
