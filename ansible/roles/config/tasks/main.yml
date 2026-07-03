@@ -27,15 +27,19 @@
   # config.json is committed with empty secret fields; the repo role reset it to
   # that clean state, so we patch the secrets in with jq (read via env, never on
   # the command line). DB/Redis URLs and addresses come from the committed file.
+  # NOTE: every line here must share the same indentation. In a YAML '>' folded
+  # scalar, a more-indented line keeps its newline, which would split the shell
+  # command (jq program on one line, filename on the next) and fail.
   ansible.builtin.shell:
-    cmd: >
-      jq '.rpc.ethereumUrls=env.RPC
-        | .sentinel.proxyUrl=env.SENTINEL
-        | .app.auth.discord.clientId=env.DISCORD_ID
-        | .app.auth.discord.clientSecret=env.DISCORD
-        | .app.auth.x.clientId=env.X_ID
-        | .app.auth.x.clientSecret=env.XSECRET
-        | .app.auth.sessionPassword=env.SESSION'
+    cmd: >-
+      jq
+      '.rpc.ethereumUrls=env.RPC
+      | .sentinel.proxyUrl=env.SENTINEL
+      | .app.auth.discord.clientId=env.DISCORD_ID
+      | .app.auth.discord.clientSecret=env.DISCORD
+      | .app.auth.x.clientId=env.X_ID
+      | .app.auth.x.clientSecret=env.XSECRET
+      | .app.auth.sessionPassword=env.SESSION'
       "{{ cfg }}" > "{{ cfg }}.tmp" && mv "{{ cfg }}.tmp" "{{ cfg }}"
   vars:
     cfg: "{{ app_dir }}/.environment/{{ item }}/config.json"

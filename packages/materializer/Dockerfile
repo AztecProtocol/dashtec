@@ -41,9 +41,11 @@ COPY packages/indexer-ponder ./packages/indexer-ponder
 # Copy materializer source
 COPY packages/materializer ./packages/materializer
 
-# Build workspace packages in dependency order
-RUN pnpm --filter @dashtec/logger build
+# Build workspace packages in dependency order. Prisma must be generated before
+# @dashtec/database is built, and database before @dashtec/shared-types.
+RUN pnpm --filter @dashtec/database db:generate
 RUN pnpm --filter @dashtec/database build
+RUN pnpm --filter @dashtec/logger build
 RUN pnpm --filter @dashtec/shared-types build
 RUN pnpm --filter @dashtec/shared-utils build
 RUN pnpm --filter @dashtec/materializer build

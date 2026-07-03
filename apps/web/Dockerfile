@@ -41,11 +41,13 @@ COPY apps/web ./apps/web
 # Load build-time env vars (NEXT_PUBLIC_* are inlined during next build)
 RUN if [ -f ./apps/web/.env.build ]; then cp ./apps/web/.env.build ./apps/web/.env.production; fi
 
-# Build workspace packages first
+# Build workspace packages first. Prisma must be generated and @dashtec/database
+# built BEFORE @dashtec/shared-types, which imports @dashtec/database/types.
+RUN pnpm --filter @dashtec/database db:generate
+RUN pnpm --filter @dashtec/database build
 RUN pnpm --filter @dashtec/logger build
 RUN pnpm --filter @dashtec/shared-types build
 RUN pnpm --filter @dashtec/shared-utils build
-RUN pnpm --filter @dashtec/database build
 RUN pnpm --filter @dashtec/contract-calls build
 
 # Build web app with standalone output

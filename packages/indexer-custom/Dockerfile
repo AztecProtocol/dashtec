@@ -39,11 +39,14 @@ COPY packages/aztec-rpc-sdk ./packages/aztec-rpc-sdk
 # Copy indexer-custom source
 COPY packages/indexer-custom ./packages/indexer-custom
 
-# Build workspace packages in order
+# Build workspace packages in order. Prisma must be generated and
+# @dashtec/database built BEFORE @dashtec/shared-types (which imports
+# @dashtec/database/types).
+RUN pnpm --filter @dashtec/database db:generate
+RUN pnpm --filter @dashtec/database build
 RUN pnpm --filter @dashtec/logger build
 RUN pnpm --filter @dashtec/shared-types build
 RUN pnpm --filter @dashtec/shared-utils build
-RUN pnpm --filter @dashtec/database build
 RUN pnpm --filter @dashtec/aztec-rpc-sdk build
 RUN pnpm --filter @dashtec/indexer-custom build
 
