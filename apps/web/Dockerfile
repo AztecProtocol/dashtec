@@ -28,6 +28,9 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 FROM deps AS builder
 WORKDIR /app
 
+# Which network's build-time env to bake (NEXT_PUBLIC_* differ per network).
+ARG NETWORK=mainnet
+
 # Copy workspace package source code
 COPY packages/contract-calls ./packages/contract-calls
 COPY packages/shared-types ./packages/shared-types
@@ -39,7 +42,7 @@ COPY packages/logger ./packages/logger
 COPY apps/web ./apps/web
 
 # Load build-time env vars (NEXT_PUBLIC_* are inlined during next build)
-RUN if [ -f ./apps/web/.env.build ]; then cp ./apps/web/.env.build ./apps/web/.env.production; fi
+RUN if [ -f "./apps/web/.env.build.${NETWORK}" ]; then cp "./apps/web/.env.build.${NETWORK}" ./apps/web/.env.production; fi
 
 # Build workspace packages in dependency order:
 # logger -> database (needs logger; prisma generated first) -> shared-types

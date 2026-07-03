@@ -23,6 +23,6 @@ const envMap = {
 };
 
 const content = buildEnvContent(network, envMap);
-const envPath = join(ROOT_DIR, 'packages', 'materializer', '.env');
+const envPath = join(ROOT_DIR, 'packages', 'materializer', `.env.${network}`);
 writeFileSync(envPath, content);
-console.log(`✓ Generated packages/materializer/.env for ${network}`);
+console.log(`✓ Generated packages/materializer/.env.${network}`);

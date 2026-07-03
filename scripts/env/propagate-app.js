@@ -64,7 +64,7 @@ if (!existsSync(appsDir)) {
 
 const contentRuntime = buildEnvContent(network, envMapRuntime);
 const contentBuild = buildEnvContent(network, envMapBuild);
-writeFileSync(join(appsDir, '.env'), contentRuntime);
-writeFileSync(join(appsDir, '.env.build'), contentBuild);
-console.log(`✓ Generated apps/web/.env for ${network}`);
-console.log(`✓ Generated apps/web/.env.build for ${network}`);
+writeFileSync(join(appsDir, `.env.${network}`), contentRuntime);
+writeFileSync(join(appsDir, `.env.build.${network}`), contentBuild);
+console.log(`✓ Generated apps/web/.env.${network}`);
+console.log(`✓ Generated apps/web/.env.build.${network}`);

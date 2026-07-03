@@ -57,6 +57,6 @@ const envMap = {
 };
 
 const content = buildEnvContent(network, envMap);
-const envPath = join(ROOT_DIR, 'packages', 'indexer-custom', '.env');
+const envPath = join(ROOT_DIR, 'packages', 'indexer-custom', `.env.${network}`);
 writeFileSync(envPath, content);
-console.log(`✓ Generated packages/indexer-custom/.env for ${network}`);
+console.log(`✓ Generated packages/indexer-custom/.env.${network}`);

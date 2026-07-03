@@ -27,7 +27,9 @@ const envSchema = z.object({
   VALIDATOR_MIGRATION_ENABLED: z.coerce.boolean(),
   VALIDATOR_MIGRATION_POLL_INTERVAL_MS: z.coerce.number().int().positive(),
   VALIDATOR_MIGRATION_BATCH_SIZE: z.coerce.number().int().positive(),
-  VALIDATOR_MIGRATION_SOURCE_DB_URL: z.string().url().optional(),
+  // Empty string is valid (migration disabled). .optional() alone still runs
+  // .url() on "", so accept an empty literal too.
+  VALIDATOR_MIGRATION_SOURCE_DB_URL: z.union([z.string().url(), z.literal('')]).optional(),
   STAKING_APP_API_URL: z.string().optional(),
   PROVIDER_LIST_POLL_INTERVAL_MS: z.coerce.number().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']),

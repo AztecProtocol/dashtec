@@ -40,6 +40,6 @@ const envMap = {
 };
 
 const content = buildEnvContent(network, envMap);
-const envPath = join(ROOT_DIR, 'packages', 'indexer-ponder', '.env');
+const envPath = join(ROOT_DIR, 'packages', 'indexer-ponder', `.env.${network}`);
 writeFileSync(envPath, content);
-console.log(`✓ Generated packages/indexer-ponder/.env for ${network}`);
+console.log(`✓ Generated packages/indexer-ponder/.env.${network}`);

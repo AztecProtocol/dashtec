@@ -17,6 +17,6 @@ const envMap = {
 };
 
 const content = buildEnvContent(network, envMap);
-const envPath = join(ROOT_DIR, 'packages', 'database', '.env');
+const envPath = join(ROOT_DIR, 'packages', 'database', `.env.${network}`);
 writeFileSync(envPath, content);
-console.log(`✓ Generated packages/database/.env for ${network}`);
+console.log(`✓ Generated packages/database/.env.${network}`);

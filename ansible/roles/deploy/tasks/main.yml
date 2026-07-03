@@ -5,3 +5,17 @@
     chdir: "{{ app_dir }}"
   loop: "{{ dashtec_networks }}"
   changed_when: true
+
+# Apply Prisma migrations against each network's database. Runs a one-off using
+# the indexer-ponder image (which includes prisma + the migrations dir) and that
+# network's DATABASE_URL. `migrate deploy` is idempotent — only new migrations
+# apply. Any materializer/indexer errors before this completes self-heal on retry.
+- name: Apply database migrations for each network
+  ansible.builtin.command:
+    cmd: >-
+      docker compose --profile {{ item }} run --rm --no-deps -T
+      --entrypoint sh {{ 'indexer-ponder' if item == 'mainnet' else 'indexer-ponder-testnet' }}
+      -c "pnpm --filter @dashtec/database db:deploy"
+    chdir: "{{ app_dir }}"
+  loop: "{{ dashtec_networks }}"
+  changed_when: true

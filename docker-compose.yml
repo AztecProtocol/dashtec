@@ -5,12 +5,14 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        NETWORK: mainnet
     image: dashtec-web:latest
     container_name: dashtec-web
     ports:
       - "${WEB_PORT:-3000}:3000"
     env_file:
-      - apps/web/.env
+      - apps/web/.env.mainnet
     environment:
       DATABASE_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
       REDIS_URL: redis://:dashtec@${REDIS_HOST:-redis-mainnet}:6379
@@ -35,7 +37,7 @@ services:
     ports:
       - "${PONDER_PORT:-42069}:42069"
     env_file:
-      - packages/indexer-ponder/.env
+      - packages/indexer-ponder/.env.mainnet
     environment:
       DATABASE_SCHEMA: ponder_prod
       DATABASE_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
@@ -64,7 +66,7 @@ services:
       - "${COLLECTOR_VALIDATOR_MIGRATION_PORT:-4003}:4003"
       - "${COLLECTOR_PROVIDER_LIST_PORT:-4004}:4004"
     env_file:
-      - packages/indexer-custom/.env
+      - packages/indexer-custom/.env.mainnet
     environment:
       DATABASE_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
       DATABASE_READ_REPLICA_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
@@ -87,7 +89,7 @@ services:
     image: dashtec-materializer:latest
     container_name: dashtec-materializer
     env_file:
-      - packages/materializer/.env
+      - packages/materializer/.env.mainnet
     environment:
       DATABASE_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
       PONDER_SCHEMA: ponder_prod
@@ -106,12 +108,14 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        NETWORK: testnet
     image: dashtec-web:testnet
     container_name: dashtec-web-testnet
     ports:
       - "${WEB_TESTNET_PORT:-3001}:3000"
     env_file:
-      - apps/web/.env
+      - apps/web/.env.testnet
     environment:
       DATABASE_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
       REDIS_URL: redis://:dashtec@redis-testnet:6379
@@ -137,7 +141,7 @@ services:
     ports:
       - "${PONDER_TESTNET_PORT:-42070}:42069"
     env_file:
-      - packages/indexer-ponder/.env
+      - packages/indexer-ponder/.env.testnet
     environment:
       DATABASE_SCHEMA: ponder_prod
       DATABASE_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
@@ -166,7 +170,7 @@ services:
       - "${COLLECTOR_VALIDATOR_MIGRATION_TESTNET_PORT:-4013}:4003"
       - "${COLLECTOR_PROVIDER_LIST_TESTNET_PORT:-4014}:4004"
     env_file:
-      - packages/indexer-custom/.env
+      - packages/indexer-custom/.env.testnet
     environment:
       DATABASE_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
       DATABASE_READ_REPLICA_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
@@ -190,7 +194,7 @@ services:
     image: dashtec-materializer:testnet
     container_name: dashtec-materializer-testnet
     env_file:
-      - packages/materializer/.env
+      - packages/materializer/.env.testnet
     environment:
       DATABASE_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
       PONDER_SCHEMA: ponder_prod
