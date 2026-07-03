@@ -15,10 +15,12 @@ const envSchema = z.object({
   NEXT_SENTINEL_URL: z.string().startsWith('http', 'Must be a valid HTTP URL'),
   REDIS_URL: z.string().optional(),
 
-  X_CLIENT_ID: z.string().min(1),
-  X_CLIENT_SECRET: z.string().min(1),
-  DISCORD_CLIENT_ID: z.string().min(1),
-  DISCORD_CLIENT_SECRET: z.string().min(1),
+  // OAuth is optional (empty = provider disabled). Default to '' so an unset
+  // value validates and the type stays `string` for downstream consumers.
+  X_CLIENT_ID: z.string().default(''),
+  X_CLIENT_SECRET: z.string().default(''),
+  DISCORD_CLIENT_ID: z.string().default(''),
+  DISCORD_CLIENT_SECRET: z.string().default(''),
 
   APP_URL: z.string().startsWith('http', 'Must be a valid HTTP URL'),
   ETHEREUM_EXPLORER_URL: z.string().startsWith('http', 'Must be a valid HTTP URL'),
