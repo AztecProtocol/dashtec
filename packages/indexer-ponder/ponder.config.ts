@@ -1,4 +1,5 @@
 import { createConfig } from 'ponder';
+import { http, fallback } from 'viem';
 import { config } from './src/config';
 import {
   RollupABI,
@@ -22,7 +23,10 @@ export default createConfig({
   chains: {
     [config.NETWORK_TYPE]: {
       id: config.CHAIN_ID,
-      rpc: config.RPC_URLS
+      // Wrap each RPC URL in an http transport with a 30s timeout (viem's default
+      // is 10s, which abandons requests the upstream RPC/eRPC would still complete
+      // within its ~30s budget). fallback() keeps multi-URL failover.
+      rpc: fallback(config.RPC_URLS.map((url) => http(url, { timeout: 30_000 }))),
     },
   },
   contracts: {
