@@ -28,12 +28,11 @@ FROM deps AS build
 WORKDIR /app
 COPY . .
 
-# Build all compiled packages (tsup / prisma). Prisma must be generated and
-# @dashtec/database built BEFORE @dashtec/shared-types (which imports
-# @dashtec/database/types).
+# Build compiled packages in dependency order: logger -> database (needs logger;
+# prisma generated first) -> shared-types (needs database) -> shared-utils.
+RUN pnpm -r --filter ./packages/logger build
 RUN pnpm -r --filter ./packages/database db:generate
 RUN pnpm -r --filter ./packages/database build
-RUN pnpm -r --filter ./packages/logger build
 RUN pnpm -r --filter ./packages/shared-types build
 RUN pnpm -r --filter ./packages/shared-utils build
 
