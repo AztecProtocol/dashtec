@@ -17,14 +17,14 @@
     "proxyUrl": ""
   },
   "contracts": {
-    "rollupAddress": "0x603bb2c05D474794ea97805e8De69bCcFb3bCA12",
+    "rollupAddress": "0xae2001f7e21d5ecabf6234e9fdd1e76f50f74962",
     "governanceAddress": "0x1102471Eb3378FEE427121c9EfcEa452E4B6B75e",
     "governanceProposerAddress": "0x06Ef1DcF87E419C48B94a331B252819FADbD63ef",
-    "slashingProposerAddress": "0x7a318c3DaA9f21f8fc8238c65755eB0394Fbf189",
+    "slashingProposerAddress": "0xa4a38fD0108C00983E75616b638Ff3321FD26958",
     "slashFactoryAddress": "0x",
     "gseAddress": "0xa92ecFD0E70c9cd5E5cd76c50Af0F7Da93567a4f",
     "stakingRegistryAddress": "0x042dF8f42790d6943F41C25C2132400fd727f452",
-    "registryAddress": "0x0000000000000000000000000000000000000000"
+    "registryAddress": "0x35b22e09ee0390539439e24f06da43d83f90e298"
   },
   "collectors": {
     "validatorStats": {

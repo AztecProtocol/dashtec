@@ -17,14 +17,14 @@
     "proxyUrl": ""
   },
   "contracts": {
-    "rollupAddress": "0xebd99ff0ff6677205509ae73f93d0ca52ac85d67",
-    "governanceAddress": "0x1b5dad737609a548543ce32a71377900b5fd5584",
-    "governanceProposerAddress": "0xef1b0d8aaca52f70323cbb91b0103bce75e9c533",
-    "slashingProposerAddress": "0x1d78c05369d4fd947b90De0B7727737c19636d4D",
-    "slashFactoryAddress": "0xd71673ec4b5d5b468cd48da855a66df0a02cdf3b",
-    "gseAddress": "0xfb243b9112bb65785a4a8edaf32529accf003614",
-    "stakingRegistryAddress": "0xa65f52BD0889BbE7DF0cE14709865e3E3bDDbEEa",
-    "registryAddress": "0x0000000000000000000000000000000000000000"
+    "rollupAddress": "0xa0bfb1b494fb49041e5c6e8c2c1be09cd171c6ba",
+    "governanceAddress": "0xcaf7447721447b22cd0076ac7c63877c3afd329f",
+    "governanceProposerAddress": "0x01c7d4ca153748d2377968fef22894cb162e9480",
+    "slashingProposerAddress": "0xf5Aa08D6F331Fed2a0F09229568D9A391D02d387",
+    "slashFactoryAddress": "0x0",
+    "gseAddress": "0xb6a38a51a6c1de9012f9d8ea9745ef957212eaac",
+    "stakingRegistryAddress": "0xC6EcC1832c8BF6a41c927BEb4E9ec610FBeDd1C2",
+    "registryAddress": "0xa0bfb1b494fb49041e5c6e8c2c1be09cd171c6ba"
   },
   "collectors": {
     "validatorStats": {
