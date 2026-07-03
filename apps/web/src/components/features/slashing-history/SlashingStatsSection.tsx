@@ -10,7 +10,6 @@ import {
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { formatBalance, formatBalanceWithUsd } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { useApp } from '@/context/AppContext';
 import {
   ComposedChart,
@@ -43,7 +42,7 @@ interface MergedDataPoint {
 }
 
 /** Custom tooltip matching prover network chart style */
-const CustomChartTooltip = ({ active, payload, networkConfig, currentPrice }: any) => {
+const CustomChartTooltip = ({ active, payload, networkConfig }: any) => {
   if (!active || !payload?.length) return null;
   const data = payload[0].payload as MergedDataPoint;
 
@@ -62,16 +61,14 @@ const CustomChartTooltip = ({ active, payload, networkConfig, currentPrice }: an
         <p className="text-slate-600 dark:text-slate-400">
           Amount Slashed:{' '}
           {(() => {
-            const { formatted, usd } = formatBalanceWithUsd(
+            const { formatted } = formatBalanceWithUsd(
               data.slashAmount,
               networkConfig?.stakingTokenDecimals || 18,
-              networkConfig?.stakingTokenSymbol || 'STK',
-              currentPrice
+              networkConfig?.stakingTokenSymbol || 'STK'
             );
             return (
               <span className="font-bold text-slate-900 dark:text-slate-100">
                 {formatted}
-                {usd && <span className="text-xs text-slate-500 ml-1">({usd})</span>}
               </span>
             );
           })()}
@@ -91,10 +88,6 @@ export const SlashingStatsSection: React.FC<SlashingStatsSectionProps> = ({ roll
   const [stats, setStats] = useState<SlashingStats | null>(null);
   const { addNotification } = useNotification();
   const { networkConfig } = useApp();
-  const stakingTokenSymbol = networkConfig?.stakingTokenSymbol ?? 'STK';
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
-
   const fetchStats = useCallback(async () => {
     try {
       setStatsLoading(true);
@@ -186,17 +179,13 @@ export const SlashingStatsSection: React.FC<SlashingStatsSectionProps> = ({ roll
           <div>
             <p className="text-xs text-slate-500 dark:text-slate-400">Total Stake Slashed</p>
             {(() => {
-              const { formatted, usd } = formatBalanceWithUsd(
+              const { formatted } = formatBalanceWithUsd(
                 stats.totalSlashedStaked,
                 networkConfig?.stakingTokenDecimals || 18,
-                networkConfig?.stakingTokenSymbol || 'STK',
-                currentPrice
+                networkConfig?.stakingTokenSymbol || 'STK'
               );
               return (
-                <>
-                  <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{formatted}</p>
-                  {usd && <p className="text-xs text-slate-500">{usd}</p>}
-                </>
+                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{formatted}</p>
               );
             })()}
           </div>
@@ -287,8 +276,7 @@ export const SlashingStatsSection: React.FC<SlashingStatsSectionProps> = ({ roll
                     const { formatted } = formatBalanceWithUsd(
                       v,
                       networkConfig?.stakingTokenDecimals || 18,
-                      '',
-                      currentPrice
+                      ''
                     );
                     return formatted.split(' ')[0];
                   }}
@@ -303,7 +291,7 @@ export const SlashingStatsSection: React.FC<SlashingStatsSectionProps> = ({ roll
                 />
 
                 <RechartsTooltip
-                  content={<CustomChartTooltip networkConfig={networkConfig} currentPrice={currentPrice} />}
+                  content={<CustomChartTooltip networkConfig={networkConfig} />}
                 />
 
                 <Area

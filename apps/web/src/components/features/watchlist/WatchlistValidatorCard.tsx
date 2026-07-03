@@ -9,7 +9,6 @@ import { useWatchlist } from '@/hooks/useWatchlist';
 import { useNotification } from '@/context/NotificationContext';
 import { ValidatorAvatar } from '@/components/ui/ValidatorAvatar';
 import { getPerformanceColor, formatBalanceWithUsd } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { getValidatorLink } from '@/utils/validatorLinks';
 import { useApp } from '@/context/AppContext';
 import { getStatusClasses } from '@/hooks/useStatusColor';
@@ -33,8 +32,6 @@ export const WatchlistValidatorCard: React.FC<WatchlistValidatorCardProps> = ({ 
     stakingTokenSymbol: 'STK',
     stakingTokenDecimals: 18
   };
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
 
   const handleWatchlistToggle = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -141,13 +138,12 @@ export const WatchlistValidatorCard: React.FC<WatchlistValidatorCardProps> = ({ 
             {validator.status}
           </span>
           {validator.balance ? (() => {
-            const { formatted, usd } = formatBalanceWithUsd(validator.balance, stakingTokenDecimals, stakingTokenSymbol, currentPrice, true);
+            const { formatted } = formatBalanceWithUsd(validator.balance, stakingTokenDecimals, stakingTokenSymbol, true);
             return (
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-700/50 rounded-md">
                 <WalletIcon className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                 <div className="text-right">
                   <span className="font-semibold text-xs text-slate-900 dark:text-slate-100 block">{formatted}</span>
-                  {usd && <span className="text-xs text-slate-500 dark:text-slate-400 block">{usd}</span>}
                 </div>
               </div>
             );

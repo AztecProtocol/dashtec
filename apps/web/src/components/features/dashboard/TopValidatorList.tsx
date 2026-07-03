@@ -15,7 +15,6 @@ import { ScoreExplanation } from '../validators/ScoreExplanation';
 import { TimeframeFilterButton } from '@/components/ui/TimeframeFilterButton';
 import { SocialVerificationModal } from '../validators/SocialVerificationModal';
 import { formatBalanceWithUsd, getPerformanceColor } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { getValidatorLink } from '@/utils/validatorLinks';
 import { VALIDATOR_STATUS, getValidatorStatusDescription } from '@/utils/constants';
 import { useNetworkConfig } from '@/hooks/useNetworkConfig';
@@ -176,9 +175,6 @@ export const ValidatorList: React.FC = () => {
   const { config } = configState;
   const { currentEpoch } = useEpochCalculations(configState);
   const { earliestEpoch } = useEarliestEpoch();
-  const stakingTokenSymbol = config?.stakingTokenSymbol ?? 'STK';
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
 
   const fetchValidatorPerformance = useCallback(async (filterQuery: string) => {
     setIsLoading(true);
@@ -368,11 +364,10 @@ export const ValidatorList: React.FC = () => {
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-slate-100/90 to-slate-50/90 dark:from-slate-700/50 dark:to-slate-700/30 rounded-lg border border-slate-200/50 dark:border-slate-600/30 shadow-sm">
                       {(() => {
-                        const { formatted, usd } = formatBalanceWithUsd(validator.balance, config?.stakingTokenDecimals ?? 18, config?.stakingTokenSymbol ?? 'STK', currentPrice, true);
+                        const { formatted } = formatBalanceWithUsd(validator.balance, config?.stakingTokenDecimals ?? 18, config?.stakingTokenSymbol ?? 'STK', true);
                         return (
                           <div className="text-right">
                             <span className="font-bold text-slate-900 dark:text-slate-100 text-sm block">{formatted}</span>
-                            {usd && <span className="text-xs text-slate-500 dark:text-slate-400 block">{usd}</span>}
                           </div>
                         );
                       })()}

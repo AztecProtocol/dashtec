@@ -8,7 +8,6 @@ interface MetricCardProps {
   label: string;
   icon: IconType;
   formatted: string;
-  usd: string | null;
   theme?: 'slate' | 'emerald';
   action?: { label: string; onClick: () => void };
 }
@@ -18,7 +17,6 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   label,
   icon: Icon,
   formatted,
-  usd,
   theme = 'slate',
   action,
 }) => {
@@ -50,11 +48,6 @@ export const MetricCard: React.FC<MetricCardProps> = ({
       <div className="text-xl font-bold text-slate-900 dark:text-slate-100">
         {formatted}
       </div>
-      {usd && (
-        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          {usd}
-        </div>
-      )}
       {action && (
         <button
           onClick={action.onClick}

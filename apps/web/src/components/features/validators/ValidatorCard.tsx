@@ -9,7 +9,6 @@ import { CopyButton } from '@/components/ui/CopyButton';
 import { ValidatorAvatar } from '@/components/ui/ValidatorAvatar';
 import { IdentityBadgeGroup } from '@/components/ui/IdentityBadgeGroup';
 import { formatBalanceWithUsd, getPerformanceColor } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { getValidatorStatusDescription } from '@/utils/constants';
 import { getValidatorLink } from '@/utils/validatorLinks';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -91,8 +90,6 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({ validator, showSco
   const { networkConfig: config } = useApp();
   const stakingTokenSymbol = config?.stakingTokenSymbol ?? 'STK';
   const stakingTokenDecimals = config?.stakingTokenDecimals ?? 18;
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
   const { isWatchlisted, toggleWatchlist } = useWatchlist();
   const { addNotification } = useNotification();
   const isOnWatchlist = isWatchlisted(validator.address);
@@ -103,7 +100,6 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({ validator, showSco
     validator.balance,
     stakingTokenDecimals,
     stakingTokenSymbol,
-    currentPrice,
     true,
   );
 
@@ -246,11 +242,6 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({ validator, showSco
             value={
               <span className="flex flex-col items-end leading-tight">
                 <span>{balance.formatted}</span>
-                {balance.usd && (
-                  <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
-                    {balance.usd}
-                  </span>
-                )}
               </span>
             }
           />

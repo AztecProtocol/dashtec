@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import { StatusCard } from './StatusCard';
 import { DecayWarningCard } from './DecayWarningCard';
-import { ProjectionCard } from './ProjectionCard';
-import { FinancialMetricsCard } from './FinancialMetricsCard';
 import { ScoreProgressionChart } from './ScoreProgressionChart';
 import { ProofHistoryTable } from './ProofHistoryTable';
 import { SharesCalculator } from './SharesCalculator';
@@ -100,7 +98,7 @@ export const ActivityTrackerDashboard: React.FC<ActivityTrackerDashboardProps> =
     );
   }
 
-  const { config, summary, history, financial } = data;
+  const { config, summary, history } = data;
 
   // Calculate epochs since last proof
   const epochsSinceLastProof = summary.currentEpoch - summary.activityScore.lastActiveEpoch;
@@ -117,15 +115,6 @@ export const ActivityTrackerDashboard: React.FC<ActivityTrackerDashboardProps> =
     accumulatedProvingEpochs: item.accumulatedProvingEpochs,
     accumulatedMissedEpochs: item.accumulatedMissedEpochs,
   }));
-
-  // Calculate averages for projections
-  const totalProofs = summary.stats.totalProofsSubmitted;
-  const avgGasCostPerProof = totalProofs > 0
-    ? financial?.costs.totalGasCostUsd || 0 / totalProofs
-    : 0;
-  const avgRewardsPerProof = totalProofs > 0
-    ? financial?.rewards.totalTokensEarned || 0 / totalProofs
-    : 0;
 
   return (
     <div className="space-y-6">
@@ -173,26 +162,6 @@ export const ActivityTrackerDashboard: React.FC<ActivityTrackerDashboardProps> =
           decayRate={config.decayPerEpoch}
         />
       </div>
-
-      {/* Middle Row: Projection + Financial Metrics */}
-      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ProjectionCard
-          currentScore={gapInfo.estimatedCurrentScore}
-          currentShares={summary.activityScore.currentShares}
-          maxScore={config.maxScore}
-          maxShares={config.maxShares}
-          avgGasCostPerProof={avgGasCostPerProof}
-          avgRewardsPerProof={avgRewardsPerProof}
-          tokenPrice={financial.rewards.tokenPrice}
-          onCalculate={() => setIsCalculatorOpen(true)}
-        />
-        <FinancialMetricsCard
-          totalGasSpent={financial.costs.totalGasCostUsd}
-          totalTokensEarned={financial.rewards.totalTokensEarned}
-          tokenPrice={financial.rewards.tokenPrice}
-          totalProofs={totalProofs}
-        />
-      </div> */}
 
       {/* Score Progression Chart */}
       <ScoreProgressionChart

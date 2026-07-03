@@ -7,7 +7,6 @@ import { ProviderAttester } from '@/types';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { ValidatorAvatar } from '@/components/ui/ValidatorAvatar';
 import { formatBalanceWithUsd, getPerformanceColor } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { useStatusColors } from '@/hooks/useStatusColor';
 import { VALIDATOR_STATUS } from '@/utils/constants';
 import { AttesterDetail } from './AttesterDetail';
@@ -69,8 +68,6 @@ export const AttesterTableRow: React.FC<AttesterTableRowProps> = ({
 }) => {
   const statusColors = useStatusColors([attester.status]);
   const statusClasses = statusColors.get(attester.status);
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
 
   return (
     <>
@@ -135,14 +132,13 @@ export const AttesterTableRow: React.FC<AttesterTableRowProps> = ({
         {/* Balance */}
         <td className="px-4 py-4">
           {attester.balance && (() => {
-            const { formatted, usd } = formatBalanceWithUsd(attester.balance, stakingTokenDecimals, stakingTokenSymbol, currentPrice, true);
+            const { formatted } = formatBalanceWithUsd(attester.balance, stakingTokenDecimals, stakingTokenSymbol, true);
             return (
               <div>
                 <div className="flex items-center gap-1.5">
                   <WalletIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                   <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">{formatted}</span>
                 </div>
-                {usd && <span className="text-xs text-slate-500 dark:text-slate-400 ml-5.5">{usd}</span>}
                 {attester.isInQueue && (
                   <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 ml-5.5">Locked balance pending</p>
                 )}

@@ -44,13 +44,9 @@ export async function GET(
     const rollupAddresses = await parseRollupParam(searchParams);
     const avgGasCostWei = await getProverAverageGasCost(normalizedAddress, rollupAddresses);
 
-    // TODO: Get ETH price from external source
-    const ethPriceUsd = 3000;
-
     const avgGasCostEth = avgGasCostWei
       ? formatUnits(BigInt(Math.floor(avgGasCostWei)), 18)
       : '0.015';
-    const avgGasCostUsd = parseFloat(avgGasCostEth) * ethPriceUsd;
 
     // Calculate current shares and multiplier
     // Based on the activity score formula from spec
@@ -64,18 +60,7 @@ export async function GET(
     const scoreNeeded = targetScore - currentScore;
     const epochsNeeded = Math.ceil(scoreNeeded / 125000); // Assuming 125k score per epoch
     const daysNeeded = epochsNeeded * 0.0134; // Assuming ~19.3 minutes per epoch
-    const estimatedGasCost = epochsNeeded * avgGasCostUsd;
     const estimatedGasCostEth = (epochsNeeded * parseFloat(avgGasCostEth)).toFixed(4);
-
-    // TODO: Get reward rate from contract
-    const rewardPerEpochAtMaxShares = 12.19; // Placeholder
-    const tokenPrice = 0.035; // Placeholder
-
-    // Calculate break-even
-    const revenuePerEpochAtMaxShares = rewardPerEpochAtMaxShares * tokenPrice;
-    const epochsAtMaxSharesToRecoverCost = Math.ceil(estimatedGasCost / revenuePerEpochAtMaxShares);
-    const daysAtMaxShares = epochsAtMaxSharesToRecoverCost * 0.0134;
-    const totalDaysToBreakEven = daysNeeded + daysAtMaxShares;
 
     const { total } = benchmark.getResults();
     return NextResponse.json({
@@ -93,13 +78,7 @@ export async function GET(
         scoreNeeded,
         epochsNeeded,
         daysNeeded: parseFloat(daysNeeded.toFixed(2)),
-        estimatedGasCost: parseFloat(estimatedGasCost.toFixed(2)),
         estimatedGasCostEth
-      },
-      breakEven: {
-        epochsAtMaxShares: epochsAtMaxSharesToRecoverCost,
-        daysAtMaxShares: parseFloat(daysAtMaxShares.toFixed(2)),
-        totalDaysToBreakEven: parseFloat(totalDaysToBreakEven.toFixed(2))
       },
       benchmark: total,
       status: 'ok'

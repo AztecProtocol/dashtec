@@ -5,7 +5,6 @@ import { NextPage } from 'next';
 import { PerformanceOverview } from '@/components/features/dashboard/PerformanceOverview';
 import { VotingOverview } from '@/components/features/dashboard/VotingOverview';
 import { MetricCardsGrid } from '@/components/features/dashboard/MetricCardsGrid';
-import { TokenPriceCard } from '@/components/features/dashboard/TokenPriceCard';
 import PageTransitionWrapper from '@/components/layout/PageTransitionWrapper';
 import React from 'react';
 import { ShieldCheckIcon, PresentationChartLineIcon } from '@heroicons/react/24/outline';
@@ -21,9 +20,9 @@ const DashboardContent: React.FC<{ rollupParam?: string }> = ({ rollupParam }) =
         {/* Enhanced Hero Section */}
         <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm mb-8">
           <div className="p-4 sm:p-6 lg:p-10">
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8 items-start">
-              {/* Left side: Title, Description, Quick Actions */}
-              <div className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-1 gap-6 sm:gap-8 items-start">
+              {/* Title, Description, Quick Actions */}
+              <div className="space-y-6">
                 <div className="flex items-center gap-3 sm:gap-4">
                   <div className="p-2 sm:p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-700 flex-shrink-0">
                     <ShieldCheckIcon className="h-6 w-6 sm:h-8 sm:w-8 text-brand-violet dark:text-accent-purple-light" />
@@ -79,11 +78,6 @@ const DashboardContent: React.FC<{ rollupParam?: string }> = ({ rollupParam }) =
                     </Link>
                   </div>
                 </div>
-              </div>
-
-              {/* Right side: Token Price Card */}
-              <div className="lg:col-span-2">
-                <TokenPriceCard />
               </div>
             </div>
           </div>

@@ -34,7 +34,6 @@ import {
   getPerformanceColor,
   getPerformanceColorWithBg,
 } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { useStatusColors } from '@/hooks/useStatusColor';
 import { AttesterDetail } from './AttesterDetail';
 import { getValidatorLink } from '@/utils/validatorLinks';
@@ -183,11 +182,9 @@ const AttesterRowDense: React.FC<AttesterRowDenseProps> = ({
 }) => {
   const statusColors = useStatusColors([attester.status]);
   const statusClasses = statusColors.get(attester.status);
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
 
   const balance = attester.balance
-    ? formatBalanceWithUsd(attester.balance, stakingTokenDecimals, stakingTokenSymbol, currentPrice, true)
+    ? formatBalanceWithUsd(attester.balance, stakingTokenDecimals, stakingTokenSymbol, true)
     : null;
 
   const attestationVolume = `${attester.attestationsSuccessful}/${attester.attestationsSuccessful + attester.attestationsMissed}`;
@@ -257,11 +254,6 @@ const AttesterRowDense: React.FC<AttesterRowDenseProps> = ({
               <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {balance.formatted}
               </div>
-              {balance.usd && (
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {balance.usd}
-                </div>
-              )}
               {attester.isInQueue && (
                 <div className="text-[10px] text-slate-400 dark:text-slate-500">
                   pending

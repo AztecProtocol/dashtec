@@ -7,7 +7,6 @@ import { ProviderAttester } from '@/types';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { ValidatorAvatar } from '@/components/ui/ValidatorAvatar';
 import { formatBalanceWithUsd, getPerformanceColor } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { useStatusColors } from '@/hooks/useStatusColor';
 import { AttesterDetail } from './AttesterDetail';
 import { EyeIcon, EyeSlashIcon, WalletIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
@@ -69,8 +68,6 @@ export const AttesterMobileCard: React.FC<AttesterMobileCardProps> = ({
 }) => {
   const statusColors = useStatusColors([attester.status]);
   const statusClasses = statusColors.get(attester.status);
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm">
@@ -128,13 +125,12 @@ export const AttesterMobileCard: React.FC<AttesterMobileCardProps> = ({
             </span>
           )}
           {attester.balance && (() => {
-            const { formatted, usd } = formatBalanceWithUsd(attester.balance, stakingTokenDecimals, stakingTokenSymbol, currentPrice, true);
+            const { formatted } = formatBalanceWithUsd(attester.balance, stakingTokenDecimals, stakingTokenSymbol, true);
             return (
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-600">
                 <WalletIcon className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                 <div className="text-right">
                   <span className="font-semibold text-xs text-slate-900 dark:text-slate-100 block">{formatted}</span>
-                  {usd && <span className="text-xs text-slate-500 dark:text-slate-400 block">{usd}</span>}
                 </div>
               </div>
             );

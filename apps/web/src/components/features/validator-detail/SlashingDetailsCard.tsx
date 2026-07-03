@@ -6,8 +6,6 @@ import { ShieldExclamationIcon, CheckCircleIcon, ChevronLeftIcon, ChevronRightIc
 import { CopyButton } from '@/components/ui/CopyButton';
 import { ValidatorAvatar } from '@/components/ui/ValidatorAvatar';
 import { formatBalance, formatTimestamp, formatAddress, formatBalanceWithUsd } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
-import { BalanceWithUsd } from '@/components/ui/BalanceWithUsd';
 import { TransactionHashCell } from '../slashing-history/TransactionHashCell';
 import { useApp } from '@/context/AppContext';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -103,22 +101,20 @@ type SlashGroup = Omit<ExecutedSlash, 'id' | 'amount' | 'timestamp' | 'validator
 
 interface SlashGroupCardProps {
   group: SlashGroup;
-  currentPrice: number | null;
   tokenDecimals: number;
   tokenSymbol: string;
 }
 
-const SlashGroupCard: React.FC<SlashGroupCardProps> = ({ group, currentPrice, tokenDecimals, tokenSymbol }) => {
-  const { formatted: totalFormatted, usd: totalUsd } = formatBalanceWithUsd(
+const SlashGroupCard: React.FC<SlashGroupCardProps> = ({ group, tokenDecimals, tokenSymbol }) => {
+  const { formatted: totalFormatted } = formatBalanceWithUsd(
     group.total_amount,
     tokenDecimals,
     tokenSymbol,
-    currentPrice,
     true
   );
 
   const deductedPerSlash = group.payloadDetails?.proposedAmount
-    ? formatBalanceWithUsd(group.payloadDetails.proposedAmount, tokenDecimals, tokenSymbol, currentPrice, true)
+    ? formatBalanceWithUsd(group.payloadDetails.proposedAmount, tokenDecimals, tokenSymbol, true)
     : null;
 
   return (
@@ -137,7 +133,6 @@ const SlashGroupCard: React.FC<SlashGroupCardProps> = ({ group, currentPrice, to
               </div>
               <span className="text-lg font-bold text-red-600 dark:text-red-400">
                 {totalFormatted} slashed
-                {totalUsd && <span className="text-xs text-red-500/70 dark:text-red-400/70 ml-1">({totalUsd})</span>}
               </span>
             </div>
             <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
@@ -155,8 +150,7 @@ const SlashGroupCard: React.FC<SlashGroupCardProps> = ({ group, currentPrice, to
               {deductedPerSlash && (
                 <>
                   <span className="text-slate-500 dark:text-slate-400">•</span>
-                  <span>Deducted: <span>{deductedPerSlash.formatted}</span>
-                  {deductedPerSlash.usd && <span className="text-slate-500/70 dark:text-slate-400/70 ml-1">({deductedPerSlash.usd})</span>} per Slash</span>
+                  <span>Deducted: <span>{deductedPerSlash.formatted}</span> per Slash</span>
                 </>
               )}
             </div>
@@ -215,9 +209,6 @@ export const SlashingDetailsCard: React.FC<SlashingDetailsCardProps> = ({ slashi
   const itemsPerPage = 2;
 
   const { networkConfig: config } = useApp();
-  const stakingTokenSymbol = config?.stakingTokenSymbol ?? 'STK';
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
 
   // Group slashes by round, payload, tx hash, and execution block
   const groupedSlashes = useMemo(() => {
@@ -374,12 +365,9 @@ export const SlashingDetailsCard: React.FC<SlashingDetailsCardProps> = ({ slashi
               <div className="rounded-xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-red-200/50 dark:border-red-800/30 p-5">
                 <div className="text-center">
                   {(() => {
-                    const { formatted, usd } = formatBalanceWithUsd(totalAmountSlashed, config?.stakingTokenDecimals || 18, config?.stakingTokenSymbol || 'STK', currentPrice, true);
+                    const { formatted } = formatBalanceWithUsd(totalAmountSlashed, config?.stakingTokenDecimals || 18, config?.stakingTokenSymbol || 'STK', true);
                     return (
-                      <>
-                        <div className="text-2xl font-bold text-red-600 dark:text-red-400 mb-1">{formatted}</div>
-                        {usd && <div className="text-xs text-red-500/70 dark:text-red-400/70 mb-1">{usd}</div>}
-                      </>
+                      <div className="text-2xl font-bold text-red-600 dark:text-red-400 mb-1">{formatted}</div>
                     );
                   })()}
                   <div className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center justify-center gap-1.5">
@@ -434,7 +422,6 @@ export const SlashingDetailsCard: React.FC<SlashingDetailsCardProps> = ({ slashi
                     <SlashGroupCard
                       key={`${group.round_number}-${group.transaction_hash}`}
                       group={group}
-                      currentPrice={currentPrice}
                       tokenDecimals={config?.stakingTokenDecimals || 18}
                       tokenSymbol={config?.stakingTokenSymbol || 'STK'}
                     />

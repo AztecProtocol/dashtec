@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { MagnifyingGlassIcon, WalletIcon, ChevronDownIcon, ArrowTopRightOnSquareIcon, GiftIcon } from '@heroicons/react/24/outline';
 import { formatBalanceWithUsd } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { getAddressUrl } from '@/utils/blockExplorer';
 import { useApp } from '@/context/AppContext';
 import { useSequencerRewards } from '@/hooks/rollup/useSequencerRewards';
@@ -21,8 +20,8 @@ interface CoinbaseCheckModalProps {
 }
 
 /** Single reward source row */
-const RewardSourceRow: React.FC<{ source: RewardSource; decimals: number; symbol: string; currentPrice: number | null }> = ({ source, decimals, symbol, currentPrice }) => {
-  const { formatted, usd } = formatBalanceWithUsd(source.rewards, decimals, symbol, currentPrice, true);
+const RewardSourceRow: React.FC<{ source: RewardSource; decimals: number; symbol: string }> = ({ source, decimals, symbol }) => {
+  const { formatted } = formatBalanceWithUsd(source.rewards, decimals, symbol, true);
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700">
@@ -38,7 +37,6 @@ const RewardSourceRow: React.FC<{ source: RewardSource; decimals: number; symbol
       </div>
       <div className="text-right shrink-0 space-y-1">
         <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatted}</div>
-        {usd && <div className="text-xs text-slate-500">{usd}</div>}
       </div>
     </div>
   );
@@ -49,16 +47,15 @@ const CollapsibleRollupSection: React.FC<{
   group: RollupRewardsGroup;
   decimals: number;
   symbol: string;
-  currentPrice: number | null;
   defaultOpen?: boolean;
   showZeroBalances: boolean;
-}> = ({ group, decimals, symbol, currentPrice, defaultOpen = false, showZeroBalances }) => {
+}> = ({ group, decimals, symbol, defaultOpen = false, showZeroBalances }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const filtered = showZeroBalances ? group.sources : group.sources.filter(s => BigInt(s.rewards) > 0n);
 
   if (filtered.length === 0 && !showZeroBalances) return null;
 
-  const { formatted, usd } = formatBalanceWithUsd(group.totalRewards, decimals, symbol, currentPrice, true);
+  const { formatted } = formatBalanceWithUsd(group.totalRewards, decimals, symbol, true);
 
   return (
     <div className="rounded-lg bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700 overflow-hidden">
@@ -91,7 +88,6 @@ const CollapsibleRollupSection: React.FC<{
         </div>
         <div className="text-right space-y-1">
           <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatted}</div>
-          {usd && <div className="text-xs text-slate-500">{usd}</div>}
           <div className="text-xs text-slate-500 dark:text-slate-400">{filtered.length} sources</div>
         </div>
       </button>
@@ -99,7 +95,7 @@ const CollapsibleRollupSection: React.FC<{
       {isOpen && (
         <div className="border-t border-slate-200 dark:border-slate-700 p-3 space-y-2">
           {filtered.map((source, index) => (
-            <RewardSourceRow key={`${source.address}-${index}`} source={source} decimals={decimals} symbol={symbol} currentPrice={currentPrice} />
+            <RewardSourceRow key={`${source.address}-${index}`} source={source} decimals={decimals} symbol={symbol} />
           ))}
         </div>
       )}
@@ -123,8 +119,6 @@ export const CoinbaseCheckModal: React.FC<CoinbaseCheckModalProps> = ({
   const [showZeroBalances, setShowZeroBalances] = useState(false);
   const decimals = config?.stakingTokenDecimals ?? 18;
   const symbol = config?.stakingTokenSymbol ?? 'STK';
-  const { data: priceData } = useTokenPrice(symbol);
-  const currentPrice = priceData?.currentPrice ?? null;
 
   useEffect(() => {
     if (rewards !== undefined && checkingAddress) {
@@ -152,10 +146,10 @@ export const CoinbaseCheckModal: React.FC<CoinbaseCheckModalProps> = ({
   const selectedGroup = rewardsByRollup?.find(g => g.isSelected);
   const otherGroups = rewardsByRollup?.filter(g => !g.isSelected && BigInt(g.totalRewards) > 0n) ?? [];
 
-  const { formatted: totalFormatted, usd: totalUsd } = formatBalanceWithUsd(totalRewards.toString(), decimals, symbol, currentPrice, true);
-  const { formatted: manualFormatted, usd: manualUsd } = manualReward
-    ? formatBalanceWithUsd(manualReward.rewards, decimals, symbol, currentPrice, true)
-    : { formatted: '', usd: null };
+  const { formatted: totalFormatted } = formatBalanceWithUsd(totalRewards.toString(), decimals, symbol, true);
+  const { formatted: manualFormatted } = manualReward
+    ? formatBalanceWithUsd(manualReward.rewards, decimals, symbol, true)
+    : { formatted: '' };
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Rewards Breakdown">
@@ -168,9 +162,7 @@ export const CoinbaseCheckModal: React.FC<CoinbaseCheckModalProps> = ({
           </div>
           <BalanceWithUsd
             formatted={totalFormatted}
-            usd={totalUsd}
             className="text-lg font-bold text-slate-900 dark:text-slate-100"
-            usdClassName="text-sm text-slate-500 ml-2"
           />
         </div>
 
@@ -193,7 +185,7 @@ export const CoinbaseCheckModal: React.FC<CoinbaseCheckModalProps> = ({
         {rewardsByRollup && rewardsByRollup.length > 0 ? (
           <div className="space-y-2">
             {selectedGroup && (
-              <CollapsibleRollupSection group={selectedGroup} decimals={decimals} symbol={symbol} currentPrice={currentPrice} defaultOpen showZeroBalances={showZeroBalances} />
+              <CollapsibleRollupSection group={selectedGroup} decimals={decimals} symbol={symbol} defaultOpen showZeroBalances={showZeroBalances} />
             )}
             {otherGroups.length > 0 && (
               <div className="pt-2">
@@ -203,7 +195,7 @@ export const CoinbaseCheckModal: React.FC<CoinbaseCheckModalProps> = ({
                 </div>
                 <div className="space-y-2">
                   {otherGroups.map(group => (
-                    <CollapsibleRollupSection key={group.rollupAddress} group={group} decimals={decimals} symbol={symbol} currentPrice={currentPrice} showZeroBalances={showZeroBalances} />
+                    <CollapsibleRollupSection key={group.rollupAddress} group={group} decimals={decimals} symbol={symbol} showZeroBalances={showZeroBalances} />
                   ))}
                 </div>
               </div>
@@ -212,7 +204,7 @@ export const CoinbaseCheckModal: React.FC<CoinbaseCheckModalProps> = ({
         ) : (
           <div className="space-y-2">
             {(showZeroBalances ? rewardSources : rewardSources.filter(s => BigInt(s.rewards) > 0n)).map((source, index) => (
-              <RewardSourceRow key={index} source={source} decimals={decimals} symbol={symbol} currentPrice={currentPrice} />
+              <RewardSourceRow key={index} source={source} decimals={decimals} symbol={symbol} />
             ))}
           </div>
         )}
@@ -261,9 +253,7 @@ export const CoinbaseCheckModal: React.FC<CoinbaseCheckModalProps> = ({
               </div>
               <BalanceWithUsd
                 formatted={manualFormatted}
-                usd={manualUsd}
                 className="text-base font-bold text-brand-violet dark:text-accent-purple-light"
-                usdClassName="text-xs text-brand-violet/60"
               />
             </div>
           </div>

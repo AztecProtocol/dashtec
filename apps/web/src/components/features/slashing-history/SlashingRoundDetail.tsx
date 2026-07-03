@@ -5,7 +5,6 @@ import { type SlashingRoundDetail as SlashingRoundDetailType, type ValidatorInfo
 import { ValidatorCell } from './ValidatorCell';
 import { TransactionHashCell } from './TransactionHashCell';
 import { formatBalance, formatBalanceWithUsd } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { BalanceWithUsd } from '@/components/ui/BalanceWithUsd';
 import { useApp } from '@/context/AppContext';
 import { useSlashingRoundData } from '@/hooks/useSlashingRoundData';
@@ -29,17 +28,15 @@ interface ConvictionItemProps {
     total_slash_amount: string | number;
     validator?: ValidatorInfo | null;
   };
-  currentPrice: number | null;
   tokenDecimals: number;
   tokenSymbol: string;
 }
 
-const ConvictionItem: React.FC<ConvictionItemProps> = ({ conviction, currentPrice, tokenDecimals, tokenSymbol }) => {
-  const { formatted, usd } = formatBalanceWithUsd(
+const ConvictionItem: React.FC<ConvictionItemProps> = ({ conviction, tokenDecimals, tokenSymbol }) => {
+  const { formatted } = formatBalanceWithUsd(
     conviction.total_slash_amount,
     tokenDecimals,
     tokenSymbol,
-    currentPrice,
     true
   );
 
@@ -64,9 +61,7 @@ const ConvictionItem: React.FC<ConvictionItemProps> = ({ conviction, currentPric
           </div>
           <BalanceWithUsd
             formatted={formatted}
-            usd={usd}
             className="text-xs sm:text-sm font-semibold text-red-700 dark:text-red-300"
-            usdClassName="text-[10px] sm:text-xs text-red-500/70 dark:text-red-400/70"
           />
         </div>
       </div>
@@ -84,9 +79,6 @@ export const SlashingRoundDetail: React.FC<SlashingRoundDetailProps> = ({ roundN
   const [convictionsSearch, setConvictionsSearch] = useState('');
   const [votesSearch, setVotesSearch] = useState('');
   const { networkConfig: config } = useApp();
-  const stakingTokenSymbol = config?.stakingTokenSymbol ?? 'STK';
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
 
   // Pagination settings
   const CONVICTIONS_PER_PAGE = 8;
@@ -249,7 +241,6 @@ export const SlashingRoundDetail: React.FC<SlashingRoundDetailProps> = ({ roundN
                 <ConvictionItem
                   key={`${conviction.validator_address}_${index}`}
                   conviction={conviction}
-                  currentPrice={currentPrice}
                   tokenDecimals={config?.stakingTokenDecimals || 18}
                   tokenSymbol={config?.stakingTokenSymbol || 'STK'}
                 />

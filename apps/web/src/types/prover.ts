@@ -33,7 +33,6 @@ export interface ProofHistoryItem {
   gasUsed: string;
   gasPrice: string;
   gasCostEth: string;
-  gasCostUsd: number;
   gapFromPrevious: number;
   accumulatedProvingEpochs: number;
   accumulatedMissedEpochs: number;
@@ -76,20 +75,10 @@ export interface ProverFinancialResponse {
     totalGasUsed: string;
     totalGasCostEth: string;
     avgGasCostPerProof: string;
-    totalGasCostUsd: number;
   };
   rewards: {
     totalTokensEarned: number;
-    tokenPrice: number;
-    totalRewardsUsd: number;
     avgTokensPerEpoch: number;
-  };
-  profitability: {
-    netProfitUsd: number;
-    roi: number;
-    breakEvenTokenPrice: number;
-    costPerEpoch: number;
-    revenuePerEpoch: number;
   };
   benchmark?: number;
   status: string;
@@ -117,13 +106,7 @@ export interface ProverProjectionsResponse {
     scoreNeeded: number;
     epochsNeeded: number;
     daysNeeded: number;
-    estimatedGasCost: number;
     estimatedGasCostEth: string;
-  };
-  breakEven: {
-    epochsAtMaxShares: number;
-    daysAtMaxShares: number;
-    totalDaysToBreakEven: number;
   };
   benchmark?: number;
   status: string;

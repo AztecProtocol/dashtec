@@ -24,7 +24,6 @@ interface HistoryItem {
   gasUsed: string;
   gasPrice: string;
   gasCostEth: string;
-  gasCostUsd: number;
   gapFromPrevious: number;
   accumulatedProvingEpochs: number;
   accumulatedMissedEpochs: number;
@@ -72,20 +71,10 @@ interface ProverData {
       totalGasUsed: string;
       totalGasCostEth: string;
       avgGasCostPerProof: string;
-      totalGasCostUsd: number;
     };
     rewards: {
       totalTokensEarned: number;
-      tokenPrice: number;
-      totalRewardsUsd: number;
       avgTokensPerEpoch: number;
-    };
-    profitability: {
-      netProfitUsd: number;
-      roi: number;
-      breakEvenTokenPrice: number;
-      costPerEpoch: number;
-      revenuePerEpoch: number;
     };
   };
 }
@@ -146,15 +135,13 @@ function formatHistoryData(
   results: any[],
   scoresMap: Map<number, ScoreData>,
   currentEpoch: number,
-  lastEpoch: number,
-  ethPriceUsd: number
+  lastEpoch: number
 ): HistoryItem[] {
   const historyData: HistoryItem[] = results.map((row) => {
     const gasUsed = row.transaction_gas.toString();
     const gasPrice = row.transaction_max_fee_per_gas || row.transaction_gas_price || 0n;
     const gasCostWei = BigInt(row.transaction_gas * gasPrice);
     const gasCostEth = formatUnits(gasCostWei, 18);
-    const gasCostUsd = parseFloat(gasCostEth) * ethPriceUsd;
 
     const scores = scoresMap.get(row.epoch) || { before: 0, after: 0, shares: 0 };
 
@@ -166,7 +153,6 @@ function formatHistoryData(
       gasUsed,
       gasPrice: gasPrice.toString(),
       gasCostEth,
-      gasCostUsd,
       gapFromPrevious: Number(row.gap_from_previous),
       accumulatedProvingEpochs: Number(row.accumulated_proving_epochs),
       accumulatedMissedEpochs: Number(row.accumulated_missed_epochs),
@@ -202,14 +188,13 @@ export async function getProverData(proverAddress: string, rollupAddresses: stri
   }
 
   const total = Number(results[0].total_count);
-  const ethPriceUsd = 3000; // TODO: Get from external source
 
   // Sort chronologically and calculate scores
   const chronological = [...results].sort((a, b) => a.epoch - b.epoch);
   const { scoresMap, finalScore, lastEpoch } = calculateRunningScores(chronological, currentEpoch);
 
   // Format history data
-  const historyData = formatHistoryData(results, scoresMap, currentEpoch, lastEpoch, ethPriceUsd);
+  const historyData = formatHistoryData(results, scoresMap, currentEpoch, lastEpoch);
 
   // Calculate final current score with decay to current epoch
   const last = scoresMap.get(lastEpoch)
@@ -254,21 +239,11 @@ export async function getProverData(proverAddress: string, rollupAddresses: stri
     costs: {
       totalGasUsed: financialMetrics?.total_gas_used.toString() || '0',
       totalGasCostEth: formatUnits(financialMetrics?.total_gas_cost_wei || 0n, 18),
-      avgGasCostPerProof: formatUnits(BigInt(Math.floor(financialMetrics?.avg_gas_cost_per_proof_wei || 0)), 18),
-      totalGasCostUsd: parseFloat(formatUnits(financialMetrics?.total_gas_cost_wei || 0n, 18)) * ethPriceUsd
+      avgGasCostPerProof: formatUnits(BigInt(Math.floor(financialMetrics?.avg_gas_cost_per_proof_wei || 0)), 18)
     },
     rewards: {
       totalTokensEarned: 0, // TODO: Calculate from contract
-      tokenPrice: 0, // TODO: Get from price feed
-      totalRewardsUsd: 0,
       avgTokensPerEpoch: 0
-    },
-    profitability: {
-      netProfitUsd: 0,
-      roi: 0,
-      breakEvenTokenPrice: 0,
-      costPerEpoch: parseFloat(formatUnits(BigInt(Math.floor(financialMetrics?.avg_gas_cost_per_proof_wei || 0)), 18)) * ethPriceUsd,
-      revenuePerEpoch: 0
     }
   };
 
@@ -286,6 +261,6 @@ export async function getProverData(proverAddress: string, rollupAddresses: stri
       total,
       currentEpoch
     },
-    // financial
+    financial
   };
 }

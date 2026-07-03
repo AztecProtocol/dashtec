@@ -6,17 +6,15 @@ import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { ProviderAvatar } from '@/components/ui/ProviderAvatar';
 import { formatBalanceWithUsd } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { useApp } from '@/context/AppContext';
 import { ProviderRowDetail } from './ProviderRowDetail';
 
-/** Active-staked cell: amount + USD with individual share-of-network bar. */
+/** Active-staked cell: amount with individual share-of-network bar. */
 const ActiveStakedCell: React.FC<{
   formatted: string;
-  usd: string | null;
   activeStaked: number;
   networkActiveStaked: number;
-}> = ({ formatted, usd, activeStaked, networkActiveStaked }) => {
+}> = ({ formatted, activeStaked, networkActiveStaked }) => {
   const sharePct = networkActiveStaked > 0
     ? Math.min(100, (activeStaked / networkActiveStaked) * 100)
     : 0;
@@ -24,7 +22,6 @@ const ActiveStakedCell: React.FC<{
   return (
     <div className="flex flex-col items-end gap-1 leading-tight">
       <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatted}</span>
-      {usd && <span className="text-[11px] text-slate-500 dark:text-slate-400">{usd}</span>}
       {networkActiveStaked > 0 && (
         <div
           className="flex items-center gap-2 w-full mt-0.5"
@@ -64,14 +61,10 @@ export const ProviderTableRow: React.FC<{
     stakingTokenSymbol: 'STK',
     stakingTokenDecimals: 18,
   };
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
-
   const activeBalance = formatBalanceWithUsd(
     provider.activeStaked,
     stakingTokenDecimals,
     stakingTokenSymbol,
-    currentPrice,
     true,
   );
 
@@ -127,7 +120,6 @@ export const ProviderTableRow: React.FC<{
         <td className="px-3 py-2.5 tabular-nums">
           <ActiveStakedCell
             formatted={activeBalance.formatted}
-            usd={activeBalance.usd}
             activeStaked={provider.activeStaked}
             networkActiveStaked={networkActiveStaked}
           />

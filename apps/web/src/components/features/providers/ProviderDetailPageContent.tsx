@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { formatBalanceWithUsd, getPerformanceColor } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { useApp } from '@/context/AppContext';
 import { useProviderDetail } from '@/hooks/queries/useProviderDetail';
 import { useRollupFilter } from '@/hooks/useRollupFilter';
@@ -44,12 +43,9 @@ const EPOCH_LIMIT_OPTIONS = [
  */
 export function ProviderDetailPageContent({ identifier }: ProviderDetailPageContentProps) {
   const { networkConfig: config } = useApp();
-  const stakingTokenSymbol = config?.stakingTokenSymbol ?? 'STK';
   const { rollupParam } = useRollupFilter();
   const [epochLimit, setEpochLimit] = useState(30);
   const { data: provider, isLoading, error } = useProviderDetail(identifier, epochLimit, rollupParam);
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
 
   /** Split attesters into managed (active) vs queued */
   const { managedAttesters, queuedAttesters } = useMemo(() => {
@@ -418,17 +414,15 @@ export function ProviderDetailPageContent({ identifier }: ProviderDetailPageCont
                   Total Active Staked
                 </div>
                 {(() => {
-                  const { formatted, usd } = formatBalanceWithUsd(
+                  const { formatted } = formatBalanceWithUsd(
                     provider.totalStaked,
                     config?.stakingTokenDecimals || 18,
                     config?.stakingTokenSymbol || 'STK',
-                    currentPrice,
                     true
                   );
                   return (
                     <>
                       <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{formatted}</p>
-                      {usd && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{usd}</p>}
                     </>
                   );
                 })()}

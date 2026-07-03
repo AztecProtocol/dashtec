@@ -7,7 +7,6 @@ import { MetricCard } from '@/components/ui/MetricCard';
 import { WalletIcon, GiftIcon, KeyIcon, CheckCircleIcon, ArrowUpOnSquareIcon, AtSymbolIcon, TagIcon, InformationCircleIcon, CalendarIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
 import VotingHistoryCard from './VotingHistoryCard';
 import { formatTimestamp, formatBalanceWithUsd } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { DiscordIcon } from '@/components/features/dashboard/Links';
 import { VerificationCard } from '@/components/features/validator-detail/VerificationCard';
 import { getValidatorStatusDescription } from '@/utils/constants';
@@ -25,24 +24,21 @@ interface DetailsSidebarProps {
 
 export const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ validator, isOwner, onUnlinkSuccess, onDiscordUnlinkSuccess, rollupParam }) => {
   const { getFormattedTimeForSlot, networkConfig: config } = useApp();
-  const stakingTokenSymbol = config?.stakingTokenSymbol ?? 'STK';
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
   const lastAttestationSlot = validator?.recentAttestations?.[0]?.slot;
   const lastProposalSlot = validator?.proposalHistory?.[0]?.slot;
   const statusClasses = useStatusColor(validator.status);
   const [isCoinbaseModalOpen, setIsCoinbaseModalOpen] = useState(false);
 
-  const { formatted: balanceFormatted, usd: balanceUsd } = useMemo(() =>
-    formatBalanceWithUsd(validator.balance, config?.stakingTokenDecimals ?? 18, config?.stakingTokenSymbol ?? 'STK', currentPrice),
-    [validator.balance, config?.stakingTokenDecimals, config?.stakingTokenSymbol, currentPrice]
+  const { formatted: balanceFormatted } = useMemo(() =>
+    formatBalanceWithUsd(validator.balance, config?.stakingTokenDecimals ?? 18, config?.stakingTokenSymbol ?? 'STK'),
+    [validator.balance, config?.stakingTokenDecimals, config?.stakingTokenSymbol]
   );
 
-  const { formatted: rewardsFormatted, usd: rewardsUsd } = useMemo(() =>
+  const { formatted: rewardsFormatted } = useMemo(() =>
     validator.unclaimedRewards
-      ? formatBalanceWithUsd(validator.unclaimedRewards, config?.stakingTokenDecimals ?? 18, config?.stakingTokenSymbol ?? 'STK', currentPrice, true)
-      : { formatted: null, usd: null },
-    [validator.unclaimedRewards, config?.stakingTokenDecimals, config?.stakingTokenSymbol, currentPrice]
+      ? formatBalanceWithUsd(validator.unclaimedRewards, config?.stakingTokenDecimals ?? 18, config?.stakingTokenSymbol ?? 'STK', true)
+      : { formatted: null },
+    [validator.unclaimedRewards, config?.stakingTokenDecimals, config?.stakingTokenSymbol]
   );
 
   return (
@@ -61,14 +57,12 @@ export const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ validator, isOwn
           label="Balance"
           icon={WalletIcon}
           formatted={balanceFormatted}
-          usd={balanceUsd}
           theme="slate"
         />
         <MetricCard
           label="Rewards"
           icon={GiftIcon}
           formatted={rewardsFormatted ?? 'N/A'}
-          usd={rewardsUsd}
           theme="emerald"
           action={{ label: 'Details', onClick: () => setIsCoinbaseModalOpen(true) }}
         />

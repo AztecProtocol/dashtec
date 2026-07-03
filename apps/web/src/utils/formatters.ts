@@ -136,27 +136,15 @@ export const formatLargeNumber = (value: number, symbol: string): string => {
   }
 };
 
-/** Format a token balance with USD equivalent */
+/** Format a token balance */
 export const formatBalanceWithUsd = (
   rawBalance: string | number | undefined | null,
   decimals: number,
   symbol: string,
-  priceUsd: number | null,
   useLargeNumberFormat: boolean = false
-): { formatted: string; usd: string | null } => {
+): { formatted: string } => {
   const formatted = formatBalance(rawBalance, decimals, symbol, useLargeNumberFormat);
-  if (!priceUsd || formatted === 'N/A' || formatted === 'Invalid Balance' || rawBalance === null || rawBalance === undefined) {
-    return { formatted, usd: null };
-  }
-  try {
-    const balanceBigInt = stringToBigIntSafe(rawBalance);
-    const value = Number(formatUnits(balanceBigInt, decimals));
-    const usdValue = value * priceUsd;
-    const usd = usdValue.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
-    return { formatted, usd };
-  } catch {
-    return { formatted, usd: null };
-  }
+  return { formatted };
 };
 
 export { formatAddress } from '@dashtec/shared-utils/formatters';

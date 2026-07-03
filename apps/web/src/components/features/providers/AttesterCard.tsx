@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ValidatorAvatar } from '@/components/ui/ValidatorAvatar';
 import { formatBalanceWithUsd, getPerformanceColor } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { useStatusColor } from '@/hooks/useStatusColor';
 import { useAttesterPerformanceChart } from '@/hooks/useAttesterPerformanceChart';
 import { Bar } from 'react-chartjs-2';
@@ -50,8 +49,6 @@ export const AttesterCard: React.FC<AttesterCardProps> = ({
   epochLimit
 }) => {
   const statusClasses = useStatusColor(attester.status);
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
   const { isWatchlisted, toggleWatchlist } = useWatchlist();
   const { addNotification } = useNotification();
   const isOnWatchlist = isWatchlisted(attester.address);
@@ -145,13 +142,12 @@ export const AttesterCard: React.FC<AttesterCardProps> = ({
                 {attester.status || 'Unknown'}
               </span>
               {attester.balance && (() => {
-                const { formatted, usd } = formatBalanceWithUsd(attester.balance, stakingTokenDecimals, stakingTokenSymbol, currentPrice, true);
+                const { formatted } = formatBalanceWithUsd(attester.balance, stakingTokenDecimals, stakingTokenSymbol, true);
                 return (
                   <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-600">
                     <WalletIcon className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                     <div className="text-right">
                       <span className="font-semibold text-xs text-slate-900 dark:text-slate-100 block">{formatted}</span>
-                      {usd && <span className="text-xs text-slate-500 dark:text-slate-400 block">{usd}</span>}
                     </div>
                   </div>
                 );

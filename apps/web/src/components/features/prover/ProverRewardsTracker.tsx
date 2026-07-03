@@ -40,16 +40,12 @@ export const ProverRewardsTracker: React.FC<ProverRewardsTrackerProps> = ({
       { epoch: 3062, score: 2_675_000, gap: 0 },
     ],
     financial: {
-      totalGasSpent: 400,
       totalTokensEarned: 3315,
-      tokenPrice: 0.035,
-      netProfitUSD: -283.97
     }
   };
 
   // Derived calculations
   const totalRewards = sampleData.financial.totalTokensEarned;
-  const totalRewardsUSD = totalRewards * sampleData.financial.tokenPrice;
   const claimedRewards = Math.floor(totalRewards * 0.85); // 85% claimed
   const pendingRewards = totalRewards - claimedRewards;
   const totalProofs = sampleData.history.length;
@@ -95,9 +91,6 @@ export const ProverRewardsTracker: React.FC<ProverRewardsTrackerProps> = ({
             <p className="text-3xl font-bold text-brand-violet dark:text-accent-purple-light mb-1">
               {totalRewards.toLocaleString()}
             </p>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              ${totalRewardsUSD.toFixed(2)}
-            </div>
           </div>
         </div>
 
@@ -116,9 +109,6 @@ export const ProverRewardsTracker: React.FC<ProverRewardsTrackerProps> = ({
             <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-1">
               {pendingRewards.toLocaleString()}
             </p>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              ${(pendingRewards * sampleData.financial.tokenPrice).toFixed(2)}
-            </div>
           </div>
         </div>
 
@@ -137,9 +127,6 @@ export const ProverRewardsTracker: React.FC<ProverRewardsTrackerProps> = ({
             <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-1">
               {claimedRewards.toLocaleString()}
             </p>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              ${(claimedRewards * sampleData.financial.tokenPrice).toFixed(2)}
-            </div>
           </div>
         </div>
 
@@ -189,18 +176,6 @@ export const ProverRewardsTracker: React.FC<ProverRewardsTrackerProps> = ({
               <span className="text-sm text-slate-600 dark:text-slate-400">Current Shares</span>
               <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
                 {sampleData.activityScore.currentShares.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
-              <span className="text-sm text-slate-600 dark:text-slate-400">Gas Spent</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                ${sampleData.financial.totalGasSpent.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-600 dark:text-slate-400">Net Profit/Loss</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                {sampleData.financial.netProfitUSD >= 0 ? '+' : ''}${sampleData.financial.netProfitUSD.toFixed(2)}
               </span>
             </div>
           </div>

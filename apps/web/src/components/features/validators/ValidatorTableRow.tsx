@@ -12,7 +12,6 @@ import { CopyButton } from '@/components/ui/CopyButton';
 import { ValidatorAvatar } from '@/components/ui/ValidatorAvatar';
 import { IdentityBadgeGroup } from '@/components/ui/IdentityBadgeGroup';
 import { formatBalanceWithUsd, getPerformanceColor } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { getValidatorLink } from '@/utils/validatorLinks';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { EpochParticipationTooltip } from '@/components/ui/EpochParticipationTooltip';
@@ -66,8 +65,6 @@ export const ValidatorTableRow: React.FC<{
     stakingTokenSymbol: 'STK',
     stakingTokenDecimals: 18
   };
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
   const { isWatchlisted, toggleWatchlist } = useWatchlist();
   const { addNotification } = useNotification();
   const isOnWatchlist = isWatchlisted(validator.address);
@@ -221,13 +218,8 @@ export const ValidatorTableRow: React.FC<{
       {/* Balance */}
       <td className="px-6 py-4 whitespace-nowrap text-sm">
         <span className="block font-bold text-slate-900 dark:text-slate-100 text-sm">
-          {formatBalanceWithUsd(validator.balance, stakingTokenDecimals, stakingTokenSymbol, currentPrice, true).formatted}
+          {formatBalanceWithUsd(validator.balance, stakingTokenDecimals, stakingTokenSymbol, true).formatted}
         </span>
-        {formatBalanceWithUsd(validator.balance, stakingTokenDecimals, stakingTokenSymbol, currentPrice, true).usd && (
-          <span className="block text-xs text-slate-500 dark:text-slate-400">
-            {formatBalanceWithUsd(validator.balance, stakingTokenDecimals, stakingTokenSymbol, currentPrice, true).usd}
-          </span>
-        )}
       </td>
 
       {/* Epoch Participation */}

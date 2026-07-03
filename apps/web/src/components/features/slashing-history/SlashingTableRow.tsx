@@ -7,7 +7,6 @@ import { DetailedView } from './DetailedView';
 import { SlashFactoryPayload } from './types';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { formatBalance, formatAddress, formatBalanceWithUsd } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 import { BalanceWithUsd } from '@/components/ui/BalanceWithUsd';
 import { EyeIcon, EyeSlashIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { useApp } from '@/context/AppContext';
@@ -80,16 +79,12 @@ export const SlashingTableRow: React.FC<SlashingTableRowProps> = memo(({
   onToggleRow 
 }) => {
   const { networkConfig: config } = useApp();
-  const stakingTokenSymbol = config?.stakingTokenSymbol ?? 'STK';
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
 
   const slashAmount = calculateTotalSlashAmount(payload);
-  const { formatted: slashFormatted, usd: slashUsd } = formatBalanceWithUsd(
+  const { formatted: slashFormatted } = formatBalanceWithUsd(
     slashAmount,
     config?.stakingTokenDecimals || 18,
     config?.stakingTokenSymbol || 'STK',
-    currentPrice,
     true
   );
 
@@ -140,9 +135,7 @@ export const SlashingTableRow: React.FC<SlashingTableRowProps> = memo(({
           <div className="flex flex-col">
             <BalanceWithUsd
               formatted={slashFormatted}
-              usd={slashUsd}
               className="text-sm font-semibold text-red-600 dark:text-red-400"
-              usdClassName="text-xs text-red-500/70 dark:text-red-400/70"
             />
             <span className="text-xs text-slate-500 dark:text-slate-400">
               {payload.slashPayloadData.length} violation{payload.slashPayloadData.length !== 1 ? 's' : ''}

@@ -24,7 +24,6 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { ProviderAvatar } from '@/components/ui/ProviderAvatar';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { formatBalanceWithUsd } from '@/utils/formatters';
-import { useTokenPrice } from '@/hooks/queries/useTokenPrice';
 
 /** Mobile card for a single provider row — dense layout. */
 const ProviderMobileCard: React.FC<{
@@ -33,13 +32,11 @@ const ProviderMobileCard: React.FC<{
   onToggle: () => void;
   stakingTokenDecimals: number;
   stakingTokenSymbol: string;
-  currentPrice: number | null;
-}> = ({ provider, isExpanded, onToggle, stakingTokenDecimals, stakingTokenSymbol, currentPrice }) => {
+}> = ({ provider, isExpanded, onToggle, stakingTokenDecimals, stakingTokenSymbol }) => {
   const balance = formatBalanceWithUsd(
     provider.activeStaked,
     stakingTokenDecimals,
     stakingTokenSymbol,
-    currentPrice,
     true,
   );
 
@@ -95,9 +92,6 @@ const ProviderMobileCard: React.FC<{
             <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-tight">
               {balance.formatted}
             </div>
-            {balance.usd && (
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{balance.usd}</div>
-            )}
           </div>
           <div>
             <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Commission</div>
@@ -169,8 +163,6 @@ export function ProvidersPageContent() {
     stakingTokenDecimals: 18,
     depositAmount: 0,
   };
-  const { data: priceData } = useTokenPrice(stakingTokenSymbol);
-  const currentPrice = priceData?.currentPrice ?? null;
   const [expandedRow, setExpandedRow] = React.useState<string | null>(null);
   const {
     providers: paginatedProviders,
@@ -303,7 +295,6 @@ export function ProvidersPageContent() {
                     onToggle={() => handleToggleRow(provider.identifier)}
                     stakingTokenDecimals={stakingTokenDecimals}
                     stakingTokenSymbol={stakingTokenSymbol}
-                    currentPrice={currentPrice}
                   />
                 ))
               ) : (

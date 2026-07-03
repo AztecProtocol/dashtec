@@ -38,20 +38,10 @@ export interface ProverDataResponse {
       totalGasUsed: string;
       totalGasCostEth: string;
       avgGasCostPerProof: string;
-      totalGasCostUsd: number;
     };
     rewards: {
       totalTokensEarned: number;
-      tokenPrice: number;
-      totalRewardsUsd: number;
       avgTokensPerEpoch: number;
-    };
-    profitability: {
-      netProfitUsd: number;
-      roi: number;
-      breakEvenTokenPrice: number;
-      costPerEpoch: number;
-      revenuePerEpoch: number;
     };
   };
   benchmark?: number;
