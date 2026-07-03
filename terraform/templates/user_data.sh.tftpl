@@ -1,0 +1,71 @@
+#!/bin/bash
+set -euxo pipefail
+
+# ===========================================================================
+# Minimal bootstrap. This makes the host reachable and Ansible-ready; all
+# further configuration (Docker, repo, app config, compose) is done by Ansible
+# (see ../ansible). cloud-init runs once at first boot and is not idempotent,
+# so we keep it to the few things that must happen before Ansible can take over.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Mount the data volume at /var/lib/docker. Done here (not in Ansible) because
+# the device path is only known to Terraform, and it must exist before Docker
+# is installed so images and Postgres/Redis named volumes land on the
+# persistent disk and survive a server rebuild. Hetzner exposes the volume at a
+# stable /dev/disk/by-id path.
+# ---------------------------------------------------------------------------
+DATA_DEVICE="${volume_device}"
+
+for _ in $(seq 1 60); do
+  [ -b "$DATA_DEVICE" ] && break
+  sleep 2
+done
+
+if ! blkid "$DATA_DEVICE"; then
+  mkfs.ext4 -F "$DATA_DEVICE"
+fi
+
+mkdir -p /var/lib/docker
+if ! grep -q "/var/lib/docker" /etc/fstab; then
+  echo "$DATA_DEVICE /var/lib/docker ext4 discard,nofail,defaults 0 2" >> /etc/fstab
+fi
+mount -a
+
+# ---------------------------------------------------------------------------
+# Ensure Python is present for Ansible's modules.
+# ---------------------------------------------------------------------------
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y python3 curl
+
+# ---------------------------------------------------------------------------
+# Tailscale: join the tailnet and enable Tailscale SSH. This is the transport
+# Ansible uses to reach the host; no public SSH port is opened. Installed from
+# Tailscale's official apt repo (GPG-pinned).
+# ---------------------------------------------------------------------------
+. /etc/os-release
+curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/$${VERSION_CODENAME}.noarmor.gpg" \
+  -o /usr/share/keyrings/tailscale-archive-keyring.gpg
+curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/$${VERSION_CODENAME}.tailscale-keyring.list" \
+  -o /etc/apt/sources.list.d/tailscale.list
+apt-get update
+apt-get install -y tailscale
+
+systemctl enable --now tailscaled
+tailscale up \
+  --ssh \
+  --authkey="${tailscale_auth_key}" \
+  --hostname="${tailscale_hostname}" \
+  --accept-dns=false
+
+# ---------------------------------------------------------------------------
+# Defense-in-depth: disable OS-level password auth and root password login.
+# (Tailscale SSH does not use the OS sshd; this hardens the box should port 22
+# ever be exposed. There is no public firewall rule for 22.)
+# ---------------------------------------------------------------------------
+cat > /etc/ssh/sshd_config.d/99-dashtec-hardening.conf <<'EOF'
+PasswordAuthentication no
+PermitRootLogin prohibit-password
+EOF
+systemctl restart ssh || systemctl restart sshd || true

@@ -1,0 +1,11 @@
+---
+- name: Clone or update the dashtec repository
+  ansible.builtin.git:
+    repo: "{{ repo_url }}"
+    dest: "{{ app_dir }}"
+    version: "{{ repo_version }}"
+    update: true
+    # Reset the working tree each run: config.json is committed with empty secret
+    # fields, and the config role injects secrets into it in place. force ensures
+    # every deploy starts from the clean committed state before re-injecting.
+    force: true

@@ -11,10 +11,10 @@
     "url": "redis://:dashtec@redis-testnet:6379"
   },
   "rpc": {
-    "ethereumUrls": "<<SECRET: injected from TESTNET_ETHEREUM_RPC_URL>>"
+    "ethereumUrls": ""
   },
   "sentinel": {
-    "proxyUrl": "<<SECRET: injected from TESTNET_SENTINEL_PROXY_URL>>"
+    "proxyUrl": ""
   },
   "contracts": {
     "rollupAddress": "0xebd99ff0ff6677205509ae73f93d0ca52ac85d67",
@@ -70,14 +70,14 @@
     },
     "auth": {
       "discord": {
-        "clientId": "<<set via DISCORD_CLIENT_ID (variable)>>",
-        "clientSecret": "<<SECRET: injected from DISCORD_CLIENT_SECRET>>"
+        "clientId": "",
+        "clientSecret": ""
       },
       "x": {
-        "clientId": "<<set via X_CLIENT_ID (variable)>>",
-        "clientSecret": "<<SECRET: injected from X_CLIENT_SECRET>>"
+        "clientId": "",
+        "clientSecret": ""
       },
-      "sessionPassword": "<<SECRET: injected from TESTNET_SESSION_PASSWORD>>"
+      "sessionPassword": ""
     }
   },
   "logging": {

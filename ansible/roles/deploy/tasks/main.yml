@@ -1,0 +1,7 @@
+---
+- name: Build images and start each network profile
+  ansible.builtin.command:
+    cmd: docker compose --profile {{ item }} up -d --build
+    chdir: "{{ app_dir }}"
+  loop: "{{ dashtec_networks }}"
+  changed_when: true

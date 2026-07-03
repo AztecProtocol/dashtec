@@ -1,0 +1,12 @@
+---
+# Configures the Hetzner host (provisioned by ../terraform) and deploys the
+# dashtec docker-compose stack. Reached over Tailscale SSH; idempotent and
+# re-runnable for day-2 updates.
+- name: Configure and deploy dashtec
+  hosts: dashtec
+  become: true
+  roles:
+    - docker # Docker Engine + compose plugin + git
+    - repo # clone/update /opt/dashtec
+    - config # config.json -> env:propagate -> root .env (secrets from env)
+    - deploy # docker compose up per network profile

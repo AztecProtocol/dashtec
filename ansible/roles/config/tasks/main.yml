@@ -1,0 +1,70 @@
+---
+- name: Assert required deploy secrets are present (mainnet)
+  ansible.builtin.assert:
+    that:
+      - network_secrets.mainnet.ethereum_rpc_url | length > 0
+      - network_secrets.mainnet.sentinel_proxy_url | length > 0
+      - network_secrets.mainnet.session_password | length > 0
+    fail_msg: >-
+      Missing mainnet secrets: set MAINNET_ETHEREUM_RPC_URL,
+      MAINNET_SENTINEL_PROXY_URL, MAINNET_SESSION_PASSWORD.
+  when: "'mainnet' in dashtec_networks"
+  no_log: true
+
+- name: Assert required deploy secrets are present (testnet)
+  ansible.builtin.assert:
+    that:
+      - network_secrets.testnet.ethereum_rpc_url | length > 0
+      - network_secrets.testnet.sentinel_proxy_url | length > 0
+      - network_secrets.testnet.session_password | length > 0
+    fail_msg: >-
+      Missing testnet secrets: set TESTNET_ETHEREUM_RPC_URL,
+      TESTNET_SENTINEL_PROXY_URL, TESTNET_SESSION_PASSWORD.
+  when: "'testnet' in dashtec_networks"
+  no_log: true
+
+- name: Inject secrets into the committed config.json
+  # config.json is committed with empty secret fields; the repo role reset it to
+  # that clean state, so we patch the secrets in with jq (read via env, never on
+  # the command line). DB/Redis URLs and addresses come from the committed file.
+  ansible.builtin.shell:
+    cmd: >
+      jq '.rpc.ethereumUrls=env.RPC
+        | .sentinel.proxyUrl=env.SENTINEL
+        | .app.auth.discord.clientId=env.DISCORD_ID
+        | .app.auth.discord.clientSecret=env.DISCORD
+        | .app.auth.x.clientId=env.X_ID
+        | .app.auth.x.clientSecret=env.XSECRET
+        | .app.auth.sessionPassword=env.SESSION'
+      "{{ cfg }}" > "{{ cfg }}.tmp" && mv "{{ cfg }}.tmp" "{{ cfg }}"
+  vars:
+    cfg: "{{ app_dir }}/.environment/{{ item }}/config.json"
+  environment:
+    RPC: "{{ network_secrets[item].ethereum_rpc_url }}"
+    SENTINEL: "{{ network_secrets[item].sentinel_proxy_url }}"
+    DISCORD_ID: "{{ discord_client_id }}"
+    DISCORD: "{{ discord_client_secret }}"
+    X_ID: "{{ x_client_id }}"
+    XSECRET: "{{ x_client_secret }}"
+    SESSION: "{{ network_secrets[item].session_password }}"
+  loop: "{{ dashtec_networks }}"
+  no_log: true
+  changed_when: true
+
+- name: Propagate config into package .env files
+  # Node-only script (no deps); run via an ephemeral container so the host needs
+  # no Node toolchain. Generates apps/web/.env(.build) and packages/*/.env.
+  ansible.builtin.command:
+    cmd: >-
+      docker run --rm
+      -v {{ app_dir }}:/app -w /app
+      node:20-alpine node scripts/env/propagate-all.js {{ item }}
+  loop: "{{ dashtec_networks }}"
+  changed_when: true
+
+- name: Render the root .env (sentinel-derived compose interpolation vars)
+  ansible.builtin.template:
+    src: root.env.j2
+    dest: "{{ app_dir }}/.env"
+    mode: "0640"
+  no_log: true

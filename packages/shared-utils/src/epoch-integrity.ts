@@ -2,7 +2,7 @@
  * Epoch Integrity Analyzer
  *
  * Pure functions for analyzing epoch data integrity.
- * Decoupled from database operations for reuse in sentinel-proxy and indexer-custom.
+ * Decoupled from database operations for reuse across packages (e.g. indexer-custom).
  */
 
 import {

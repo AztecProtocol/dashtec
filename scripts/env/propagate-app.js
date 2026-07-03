@@ -23,7 +23,7 @@ const envMapRuntime = {
 
   '#network': 'Network Configuration',
   'ETHEREUM_RPC_URL': config.rpc.ethereumUrls,
-  'NEXT_SENTINEL_URL': `${config.sentinel.proxyUrl}/pruned`,
+  'NEXT_SENTINEL_URL': config.sentinel.proxyUrl,
   'ETHEREUM_EXPLORER_URL': config.app.ethereumExplorerUrl,
   'AZTEC_SCAN_URL': config.app.aztecScanUrl || '',
   'CHAIN_NAME': config.network.type,

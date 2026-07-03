@@ -8,7 +8,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently \"turbo run dev\" \"pnpm sentinel-proxy:dev\"",
+    "dev": "turbo run dev",
     "dev:web": "pnpm --filter @dashtec/web dev",
     "build": "turbo run build",
     "test": "turbo run test",
@@ -25,13 +25,11 @@
     "db:prepare": "pnpm db:generate && pnpm db:migrate",
     "setup:local": "POSTGRES_PORT=5433 REDIS_PORT=6380 ./scripts/setup-databases.sh",
     "env:propagate": "node scripts/env/propagate-all.js",
-    "sentinel-proxy:dev": "cd services/sentinel-proxy-go && make watch",
     "sdk:push": "git subtree push --prefix=packages/aztec-rpc-sdk aztec-rpc-sdk main",
     "sdk:pull": "git subtree pull --prefix=packages/aztec-rpc-sdk aztec-rpc-sdk main --squash",
     "migrate:rollup-data": "pnpm --filter @dashtec/database exec tsx ../../scripts/migrate-rollup-data.ts"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1",
     "tsx": "^4.19.2",
     "turbo": "^2.6.3",
     "typescript": "^5.9.3"

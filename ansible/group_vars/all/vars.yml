@@ -1,0 +1,34 @@
+---
+# Non-secret configuration.
+
+app_dir: /opt/dashtec
+
+repo_url: "https://github.com/AztecProtocol/dashtec.git"
+repo_version: main
+
+# Networks to deploy (docker-compose profiles). Drop one to run a single network.
+dashtec_networks:
+  - mainnet
+  - testnet
+
+# Per-network secrets, sourced from the environment (GitHub Actions Secrets in
+# CI, or `export`ed locally). These are injected into the committed config.json
+# at deploy time; NEXT_SENTINEL_URL / VALIDATOR_STATS_RPC_URL in the root .env
+# are set to sentinel_proxy_url (the Aztec node JSON-RPC endpoint).
+network_secrets:
+  mainnet:
+    ethereum_rpc_url: "{{ lookup('env', 'MAINNET_ETHEREUM_RPC_URL') }}"
+    sentinel_proxy_url: "{{ lookup('env', 'MAINNET_SENTINEL_PROXY_URL') }}"
+    session_password: "{{ lookup('env', 'MAINNET_SESSION_PASSWORD') }}"
+  testnet:
+    ethereum_rpc_url: "{{ lookup('env', 'TESTNET_ETHEREUM_RPC_URL') }}"
+    sentinel_proxy_url: "{{ lookup('env', 'TESTNET_SENTINEL_PROXY_URL') }}"
+    session_password: "{{ lookup('env', 'TESTNET_SESSION_PASSWORD') }}"
+
+# OAuth config is shared across networks (one Discord/X app with both redirect
+# URIs registered). Optional — auth is disabled if empty. Client IDs are public
+# (GitHub Actions *variables*); client secrets are sensitive (Actions *secrets*).
+discord_client_id: "{{ lookup('env', 'DISCORD_CLIENT_ID') }}"
+discord_client_secret: "{{ lookup('env', 'DISCORD_CLIENT_SECRET') }}"
+x_client_id: "{{ lookup('env', 'X_CLIENT_ID') }}"
+x_client_secret: "{{ lookup('env', 'X_CLIENT_SECRET') }}"

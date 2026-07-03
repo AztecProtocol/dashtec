@@ -102,7 +102,7 @@ URL configuration for the Aztec node RPC endpoint. This can point directly to an
 
 | Property | Type | Example | Description |
 |----------|------|---------|-------------|
-| `proxyUrl` | string | `"http://your-aztec-node:8080"` | Base URL of the Aztec RPC endpoint. The web app appends `/pruned` for pruned node access. The indexer-custom appends `/archiver` for archiver access. |
+| `proxyUrl` | string | `"http://your-aztec-node:8080"` | Aztec node JSON-RPC endpoint (serves all `node_*` methods, e.g. `node_getValidatorsStats`). Used as-is by both the web app and indexer-custom. |
 
 **Used by:** web app, indexer-custom
 

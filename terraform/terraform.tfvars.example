@@ -1,0 +1,48 @@
+# Copy this file to terraform.tfvars and fill in your values.
+# IMPORTANT: Never commit terraform.tfvars to version control!
+
+# --- AWS (CloudFront / ACM / Route53 + state backend) ---
+aws_region  = "eu-west-2"
+environment = "prod"
+
+# Custom domain toggle.
+#   true  = provision ACM + Route53 + CloudFront aliases for the domains below
+#           (requires a delegated Route53 hosted zone).
+#   false = temporary/no-DNS testing: CloudFront serves on its default
+#           *.cloudfront.net domain with an <ip>.sslip.io origin. No ACM/Route53.
+use_custom_domain = false
+
+# Route53 hosted zone (REQUIRED only when use_custom_domain = true)
+# Find it with: aws route53 list-hosted-zones
+route53_zone_id = ""
+
+# Public domains fronted by CloudFront (used only when use_custom_domain = true)
+mainnet_domain = "dashtec.xyz"
+testnet_domain = "testnet.dashtec.xyz"
+
+# Internal CloudFront origin hostname -> Hetzner IPv4 (used only when use_custom_domain = true)
+origin_domain = "origin.dashtec.xyz"
+
+# --- Hetzner Cloud (compute) ---
+
+# API token from the Hetzner Cloud console (Project > Security > API Tokens).
+# Prefer exporting TF_VAR_hcloud_token instead of putting it here.
+hcloud_token = "your-hetzner-cloud-api-token"
+
+hcloud_location = "nbg1"     # nbg1/fsn1/hel1 (EU), ash/hil (US), sin (Singapore)
+server_type     = "cx53"     # 16 vCPU / 32 GB (x86). cx43 (8/16) for a single network.
+server_image    = "ubuntu-24.04"
+data_volume_size = 100       # GB, mounted at /var/lib/docker
+enable_backups   = true      # Hetzner daily backups (+~20% of server price)
+
+# Administration is over Tailscale SSH (no public SSH port is opened).
+# Create a reusable, pre-authorized, tagged pre-auth key in the Tailscale admin
+# console. Prefer exporting TF_VAR_tailscale_auth_key over setting it here.
+tailscale_auth_key = "tskey-auth-..."
+tailscale_hostname = "dashtec-host"
+
+# Optional break-glass key for the Hetzner web console (NOT a public SSH port):
+# ssh_public_key = "ssh-ed25519 AAAA... you@host"
+
+# Note: repo URL, app config, and docker-compose deploys are handled by Ansible
+# (see ../ansible/group_vars), not Terraform.
