@@ -3,7 +3,6 @@
  */
 export {
   RollupABI,
-  SlashFactoryABI,
   TallySlashingProposerABI,
   EmpireBaseABI,
   GovernorContractABI,

@@ -37,7 +37,31 @@ All environment variables are managed through a single config file per network. 
 cp .environment/mainnet/config.example.json .environment/mainnet/config.json
 ```
 
-### Step 2: Propagate to all packages
+Fill in `rpc.ethereumUrls` (L1 execution RPC) and `rpc.consensusUrls` (L1 beacon
+API). Leave the `contracts` addresses at their zero placeholders — the next step
+fills them in.
+
+### Step 2: Start the Aztec node and discover contract addresses
+
+dashtec runs its own Aztec node rather than depending on someone else's RPC. It
+serves the `node_*` methods the dashboard needs and is the source of truth for
+which contracts to index.
+
+```bash
+docker compose --profile mainnet up -d --wait --wait-timeout 3600 aztec-node-mainnet
+pnpm env:discover mainnet
+```
+
+`env:discover` writes `contracts.*` and `ponder.startBlock` into your
+`config.json`, reading them from the node (`node_getL1ContractAddresses`) and
+from L1 (`Rollup.getSlasher()` → `Slasher.PROPOSER()`, and an `eth_getCode`
+binary search for the rollup's deployment block). Re-run it after any Aztec
+network upgrade — V5 redeployed the rollup, so pinned addresses go stale.
+
+The first boot restores a snapshot and then catches up to the chain tip, which
+can take a while; `--wait` blocks until the node's `/status` reports healthy.
+
+### Step 3: Propagate to all packages
 
 ```bash
 pnpm env:propagate mainnet
@@ -53,10 +77,12 @@ This reads your `config.json` and generates `.env` files for each package:
 | `packages/indexer-custom` | `.env` |
 | `packages/materializer` | `.env` |
 
-For testnet:
+For testnet, the same three steps against the testnet profile:
 
 ```bash
 cp .environment/testnet/config.example.json .environment/testnet/config.json
+docker compose --profile testnet up -d --wait --wait-timeout 3600 aztec-node-testnet
+pnpm env:discover testnet
 pnpm env:propagate testnet
 ```
 
@@ -92,34 +118,53 @@ pnpm env:propagate testnet
 
 | Property | Type | Example | Description |
 |----------|------|---------|-------------|
-| `ethereumUrls` | string | `"https://eth-mainnet.g.alchemy.com/v2/KEY"` | Comma-separated Ethereum RPC URLs. The Ponder indexer uses these to watch on-chain events. The indexer-custom uses them for contract reads. Multiple URLs provide failover. |
+| `ethereumUrls` | string | `"https://eth-mainnet.g.alchemy.com/v2/KEY"` | Comma-separated Ethereum RPC URLs (L1 execution layer). The Ponder indexer uses these to watch on-chain events; indexer-custom uses them for contract reads; the Aztec node uses the first one as `ETHEREUM_HOSTS`. Multiple URLs provide failover. |
+| `consensusUrls` | string | `"https://ethereum-beacon-api.publicnode.com"` | Comma-separated L1 **beacon chain** API URLs. Only the Aztec node uses these (`L1_CONSENSUS_HOST_URLS`), to fetch the blobs that carry checkpoint data. An execution RPC is not a substitute. |
 
-**Used by:** indexer-ponder, indexer-custom
+**Used by:** indexer-ponder, indexer-custom, aztec-node
 
-### `sentinel`
+### `aztecNode`
 
-URL configuration for the Aztec node RPC endpoint. This can point directly to an Aztec node or to a reverse proxy that load-balances across multiple nodes.
+The Aztec node dashtec runs for itself, as the `aztec-node-<network>` service in
+`docker-compose.yml`. It replaces the third-party sentinel proxy that earlier
+versions pointed `NEXT_SENTINEL_URL` / `VALIDATOR_STATS_RPC_URL` at, and it is
+also the source of truth for contract addresses (see `pnpm env:discover` below).
 
 | Property | Type | Example | Description |
 |----------|------|---------|-------------|
-| `proxyUrl` | string | `"http://your-aztec-node:8080"` | Aztec node JSON-RPC endpoint (serves all `node_*` methods, e.g. `node_getValidatorsStats`). Used as-is by both the web app and indexer-custom. |
+| `url` | string | `"http://aztec-node-mainnet:8080"` | The node's JSON-RPC endpoint on the compose network. Serves all `node_*` methods, e.g. `node_getValidatorsStats`. Used as-is by the web app and indexer-custom. Point it elsewhere to fall back to an external node. |
+| `image` | string | `"aztecprotocol/aztec:5.2.0@sha256:2dd0b84a…"` | Node image, pinned by digest with the tag kept for readability (the same convention `foundation-iac` uses). Note the tags have **no** `v` prefix — `5.2.0`, not `v5.2.0`. |
+| `network` | string | `"mainnet"` | Passed as `NETWORK`; the node resolves its own bootnodes, registry address and snapshot URLs from the published network config. |
+| `p2pPort` | number | `40400` | Public P2P port (TCP + UDP discv5), advertised in the node's ENR. Must match `aztec_node_p2p_ports` in `terraform/variables.tf` or inbound peers cannot dial in. |
+| `syncMode` | string | `"snapshot"` | `snapshot` restores from a published snapshot before following the chain; `full` replays from genesis. |
+| `sentinelHistoryLengthInEpochs` | number | `24` | How many epochs of validator history the node's sentinel keeps, which bounds what `node_getValidatorsStats` can return. |
+| `maxOldSpaceSizeMb` | number | `4096` | Node.js heap cap inside the container. |
+| `memLimit` | string | `"8g"` | Container memory limit. Keep it comfortably above `maxOldSpaceSizeMb`. |
 
-**Used by:** web app, indexer-custom
+**Used by:** web app, indexer-custom, docker-compose, `scripts/env/discover-contracts.js`
 
 ### `contracts`
 
 Aztec protocol contract addresses on Ethereum. These are used by the Ponder indexer to watch events and by the web app for direct contract reads.
 
+**Everything except `stakingRegistryAddress` is discovered, not hand-written.**
+Run `pnpm env:discover <network>` with the Aztec node up; it fills these in from
+`node_getL1ContractAddresses` plus `Rollup.getSlasher()` → `Slasher.PROPOSER()`,
+and sets `ponder.startBlock` to the rollup's deployment block. This is what keeps
+dashtec correct across an Aztec upgrade: V5 redeployed the rollup and the reward
+distributor and repointed the Registry at them, so pinned addresses go stale.
+
 | Property | Type | Example | Description |
 |----------|------|---------|-------------|
-| `rollupAddress` | string | `"0x603b..."` | Aztec Rollup contract. The core contract that tracks epochs, validators, and block proposals. Used by all packages. |
-| `governanceAddress` | string | `"0x1102..."` | Governance contract for on-chain proposals and voting. |
-| `governanceProposerAddress` | string | `"0x06Ef..."` | Governance proposer contract — handles governance payload submission. |
-| `slashingProposerAddress` | string | `"0x7a31..."` | Slashing proposer contract — handles slashing payload submission. |
-| `slashFactoryAddress` | string | `"0x..."` | Slash factory contract. Can be empty (`"0x"`) if not deployed. |
-| `gseAddress` | string | `"0xa92e..."` | GSE (Governance State Extension) contract — tracks governance state. |
-| `stakingRegistryAddress` | string | `"0x042d..."` | Staking registry contract — stores validator staking info, provider registrations, and commission rates. |
-| `registryAddress` | string | `"0x0000..."` | Registry contract. Set to zero address if not in use. |
+| `rollupAddress` | string | `"0x603b..."` | Aztec Rollup contract. The core contract that tracks epochs, validators, and checkpoint proposals. Used by all packages. *Discovered.* |
+| `governanceAddress` | string | `"0x1102..."` | Governance contract for on-chain proposals and voting. *Discovered.* |
+| `governanceProposerAddress` | string | `"0x06Ef..."` | Governance proposer contract — handles governance payload submission. *Discovered.* |
+| `slashingProposerAddress` | string | `"0x7a31..."` | Slashing proposer contract (upstream `SlashingProposer`; called `TallySlashingProposer` in this codebase). *Discovered* via the rollup's slasher. |
+| `gseAddress` | string | `"0xa92e..."` | GSE (Governance Staking Escrow) contract. *Discovered.* |
+| `stakingRegistryAddress` | string | `"0x042d..."` | Staking registry — validator staking info, provider registrations, commission rates. Not part of the Aztec core deployment, so **set this by hand**. |
+| `registryAddress` | string | `"0xc2f2..."` | Aztec Registry contract — the canonical-rollup pointer. *Discovered.* |
+
+> `slashFactoryAddress` was removed: Aztec V5 deleted `SlashFactory.sol`.
 
 **Used by:** indexer-ponder (all), web app (rollup, slashing, governance, staking registry), indexer-custom (rollup), materializer (rollup)
 
@@ -197,7 +242,7 @@ Configuration for the Ponder blockchain event indexer.
 | `port` | number | `42069` | HTTP port for the Ponder dev server and health endpoint. |
 | `databaseSchema` | string | `"ponder_dev"` | PostgreSQL schema name where Ponder stores its indexed data. Use `"ponder_prod"` in production. The materializer reads from this schema. |
 | `maxHealthcheckDuration` | number | `240` | Maximum seconds for the Ponder health check to report healthy during initial sync. |
-| `startBlock` | number | `20000000` | Ethereum block number to start indexing from. Set this to the deployment block of your earliest contract to avoid scanning unnecessary blocks. |
+| `startBlock` | number | `20000000` | Ethereum block number to start indexing from. Set by `pnpm env:discover <network>` to the rollup's deployment block, found by binary-searching `eth_getCode`. After an Aztec upgrade the rollup is a *new* contract, so this moves forward and the index starts fresh from there. |
 | `redis.url` | string | — | Redis URL for Ponder's internal caching. Optional. |
 
 **Used by:** indexer-ponder, materializer (databaseSchema)

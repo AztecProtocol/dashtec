@@ -11,20 +11,27 @@
     "url": "redis://:dashtec@redis-testnet:6379"
   },
   "rpc": {
-    "ethereumUrls": ""
+    "ethereumUrls": "",
+    "consensusUrls": ""
   },
-  "sentinel": {
-    "proxyUrl": ""
+  "aztecNode": {
+    "url": "http://aztec-node-testnet:8080",
+    "image": "aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0",
+    "network": "testnet",
+    "p2pPort": 40500,
+    "syncMode": "snapshot",
+    "sentinelHistoryLengthInEpochs": 24,
+    "maxOldSpaceSizeMb": 4096,
+    "memLimit": "6g"
   },
   "contracts": {
-    "rollupAddress": "0xa0bfb1b494fb49041e5c6e8c2c1be09cd171c6ba",
-    "governanceAddress": "0xcaf7447721447b22cd0076ac7c63877c3afd329f",
-    "governanceProposerAddress": "0x01c7d4ca153748d2377968fef22894cb162e9480",
-    "slashingProposerAddress": "0xf5Aa08D6F331Fed2a0F09229568D9A391D02d387",
-    "slashFactoryAddress": "0x0",
-    "gseAddress": "0xb6a38a51a6c1de9012f9d8ea9745ef957212eaac",
+    "rollupAddress": "0x0000000000000000000000000000000000000000",
+    "governanceAddress": "0x0000000000000000000000000000000000000000",
+    "governanceProposerAddress": "0x0000000000000000000000000000000000000000",
+    "slashingProposerAddress": "0x0000000000000000000000000000000000000000",
+    "gseAddress": "0x0000000000000000000000000000000000000000",
     "stakingRegistryAddress": "0xC6EcC1832c8BF6a41c927BEb4E9ec610FBeDd1C2",
-    "registryAddress": "0xa0bfb1b494fb49041e5c6e8c2c1be09cd171c6ba"
+    "registryAddress": "0x0000000000000000000000000000000000000000"
   },
   "collectors": {
     "validatorStats": {
@@ -56,7 +63,7 @@
   "ponder": {
     "port": 42069,
     "maxHealthcheckDuration": 240,
-    "startBlock": 9500000
+    "startBlock": 0
   },
   "app": {
     "url": "https://testnet.dashtec.xyz",

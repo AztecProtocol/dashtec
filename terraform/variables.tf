@@ -69,7 +69,7 @@ variable "server_image" {
 }
 
 variable "data_volume_size" {
-  description = "Size in GB of the Hetzner volume mounted at /var/lib/docker, so Docker images and the Postgres/Redis named volumes persist across server rebuilds. Minimum 10."
+  description = "Size in GB of the Hetzner volume mounted at /var/lib/docker, so Docker images and the Postgres/Redis/Aztec-node named volumes persist across server rebuilds. Minimum 10. This now also carries the two self-hosted Aztec nodes' world state, archiver data and CRS; aztecscan runs a comparable node per network on a 40 GiB root volume, so 100 should hold, with Postgres growth the thing most likely to eat the headroom. Hetzner volumes grow online and cannot shrink, so raise this only once it's actually needed."
   type        = number
   default     = 100
 }
@@ -100,3 +100,15 @@ variable "ssh_public_key" {
 
 # Note: the repository URL, app config, and the docker-compose lifecycle are
 # managed by Ansible (see ../ansible), not Terraform/cloud-init.
+
+variable "aztec_node_p2p_ports" {
+  description = "Public P2P port per self-hosted Aztec node, opened on the host firewall for both TCP and UDP (discv5). Must match AZTEC_NODE_P2P_PORT_<NETWORK> in docker-compose.yml — the node advertises the port in its ENR, so a mismatch leaves it undialable and it will only ever have outbound peers."
+  type = list(object({
+    network = string
+    port    = number
+  }))
+  default = [
+    { network = "mainnet", port = 40400 },
+    { network = "testnet", port = 40500 },
+  ]
+}

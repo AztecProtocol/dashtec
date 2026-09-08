@@ -1,32 +1,23 @@
 ---
-- name: Assert required deploy secrets are present (mainnet)
+- name: Assert required deploy secrets are present
   ansible.builtin.assert:
     that:
-      - network_secrets.mainnet.ethereum_rpc_url | length > 0
-      - network_secrets.mainnet.sentinel_proxy_url | length > 0
-      - network_secrets.mainnet.session_password | length > 0
+      - network_secrets[item].ethereum_rpc_url | length > 0
+      - network_secrets[item].l1_consensus_urls | length > 0
+      - network_secrets[item].session_password | length > 0
     fail_msg: >-
-      Missing mainnet secrets: set MAINNET_ETHEREUM_RPC_URL,
-      MAINNET_SENTINEL_PROXY_URL, MAINNET_SESSION_PASSWORD.
-  when: "'mainnet' in dashtec_networks"
-  no_log: true
-
-- name: Assert required deploy secrets are present (testnet)
-  ansible.builtin.assert:
-    that:
-      - network_secrets.testnet.ethereum_rpc_url | length > 0
-      - network_secrets.testnet.sentinel_proxy_url | length > 0
-      - network_secrets.testnet.session_password | length > 0
-    fail_msg: >-
-      Missing testnet secrets: set TESTNET_ETHEREUM_RPC_URL,
-      TESTNET_SENTINEL_PROXY_URL, TESTNET_SESSION_PASSWORD.
-  when: "'testnet' in dashtec_networks"
+      Missing {{ item }} secrets: set {{ item | upper }}_ETHEREUM_RPC_URL,
+      {{ item | upper }}_L1_CONSENSUS_HOST_URLS,
+      {{ item | upper }}_SESSION_PASSWORD.
+  loop: "{{ dashtec_networks }}"
   no_log: true
 
 - name: Inject secrets into the committed config.json
   # config.json is committed with empty secret fields; the repo role reset it to
   # that clean state, so we patch the secrets in with jq (read via env, never on
-  # the command line). DB/Redis URLs and addresses come from the committed file.
+  # the command line). DB/Redis URLs and the aztecNode block come from the
+  # committed file; contract addresses are filled in later by the aztec_node
+  # role's discovery step.
   # NOTE: every line here must share the same indentation. In a YAML '>' folded
   # scalar, a more-indented line keeps its newline, which would split the shell
   # command (jq program on one line, filename on the next) and fail.
@@ -34,7 +25,7 @@
     cmd: >-
       jq
       '.rpc.ethereumUrls=env.RPC
-      | .sentinel.proxyUrl=env.SENTINEL
+      | .rpc.consensusUrls=env.CONSENSUS
       | .app.auth.discord.clientId=env.DISCORD_ID
       | .app.auth.discord.clientSecret=env.DISCORD
       | .app.auth.x.clientId=env.X_ID
@@ -45,7 +36,7 @@
     cfg: "{{ app_dir }}/.environment/{{ item }}/config.json"
   environment:
     RPC: "{{ network_secrets[item].ethereum_rpc_url }}"
-    SENTINEL: "{{ network_secrets[item].sentinel_proxy_url }}"
+    CONSENSUS: "{{ network_secrets[item].l1_consensus_urls }}"
     DISCORD_ID: "{{ discord_client_id }}"
     DISCORD: "{{ discord_client_secret }}"
     X_ID: "{{ x_client_id }}"
@@ -55,18 +46,26 @@
   no_log: true
   changed_when: true
 
-- name: Propagate config into package .env files
-  # Node-only script (no deps); run via an ephemeral container so the host needs
-  # no Node toolchain. Generates apps/web/.env(.build) and packages/*/.env.
-  ansible.builtin.command:
-    cmd: >-
-      docker run --rm
-      -v {{ app_dir }}:/app -w /app
-      node:20-alpine node scripts/env/propagate-all.js {{ item }}
+- name: Read back each network's config.json
+  # The root .env is rendered from the non-secret half of config.json (the
+  # aztecNode block), so read the file rather than duplicating those values in
+  # group_vars where they could drift.
+  ansible.builtin.slurp:
+    src: "{{ app_dir }}/.environment/{{ item }}/config.json"
+  register: dashtec_config_raw
   loop: "{{ dashtec_networks }}"
-  changed_when: true
+  no_log: true
 
-- name: Render the root .env (sentinel-derived compose interpolation vars)
+- name: Build the config lookup used by the root .env template
+  ansible.builtin.set_fact:
+    dashtec_config: >-
+      {{ dict(dashtec_networks | zip(dashtec_config_raw.results
+         | map(attribute='content') | map('b64decode') | map('from_json'))) }}
+  no_log: true
+
+- name: Render the root .env (compose interpolation vars)
+  # Must run before the aztec_node role: docker compose reads this file for the
+  # AZTEC_NODE_* variables the node services interpolate.
   ansible.builtin.template:
     src: root.env.j2
     dest: "{{ app_dir }}/.env"

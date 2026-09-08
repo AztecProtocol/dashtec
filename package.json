@@ -25,6 +25,7 @@
     "db:prepare": "pnpm db:generate && pnpm db:migrate",
     "setup:local": "POSTGRES_PORT=5433 REDIS_PORT=6380 ./scripts/setup-databases.sh",
     "env:propagate": "node scripts/env/propagate-all.js",
+    "env:discover": "node scripts/env/discover-contracts.js",
     "sdk:push": "git subtree push --prefix=packages/aztec-rpc-sdk aztec-rpc-sdk main",
     "sdk:pull": "git subtree pull --prefix=packages/aztec-rpc-sdk aztec-rpc-sdk main --squash",
     "migrate:rollup-data": "pnpm --filter @dashtec/database exec tsx ../../scripts/migrate-rollup-data.ts"

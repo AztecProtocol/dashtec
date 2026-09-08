@@ -18,6 +18,9 @@ services:
       REDIS_URL: redis://:dashtec@${REDIS_HOST:-redis-mainnet}:6379
       DATABASE_URL_REPLICA: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
       NEXT_SENTINEL_URL: ${NEXT_SENTINEL_URL}
+    depends_on:
+      aztec-node-mainnet:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
@@ -72,6 +75,9 @@ services:
       DATABASE_READ_REPLICA_URL: postgresql://dashtec:dashtec@${DB_HOST:-postgres-mainnet}:5432/dashtec
       REDIS_URL: redis://:dashtec@${REDIS_HOST:-redis-mainnet}:6379
       VALIDATOR_STATS_RPC_URL: ${VALIDATOR_STATS_RPC_URL}
+    depends_on:
+      aztec-node-mainnet:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
@@ -121,6 +127,9 @@ services:
       REDIS_URL: redis://:dashtec@redis-testnet:6379
       DATABASE_URL_REPLICA: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
       NEXT_SENTINEL_URL: ${NEXT_SENTINEL_URL_TESTNET}
+    depends_on:
+      aztec-node-testnet:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
@@ -176,6 +185,9 @@ services:
       DATABASE_READ_REPLICA_URL: postgresql://dashtec:dashtec@postgres-testnet:5432/dashtec
       REDIS_URL: redis://:dashtec@redis-testnet:6379
       VALIDATOR_STATS_RPC_URL: ${VALIDATOR_STATS_RPC_URL_TESTNET}
+    depends_on:
+      aztec-node-testnet:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
@@ -205,6 +217,122 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+    profiles:
+      - testnet
+
+  # Aztec node (mainnet). Replaces the third-party sentinel proxy that
+  # NEXT_SENTINEL_URL / VALIDATOR_STATS_RPC_URL used to point at: a full node
+  # serves every node_* JSON-RPC method the dashboard needs, and SENTINEL_ENABLED
+  # is what makes node_getValidatorsStats available.
+  #
+  # `NETWORK: mainnet` makes the node resolve its own bootnodes, registry address
+  # and snapshot URLs from the published network config — no contract addresses
+  # are configured here. The RPC port is not published; sibling compose services
+  # reach it as http://aztec-node-mainnet:8080. P2P is published and must be
+  # opened in terraform/hetzner.tf.
+  aztec-node-mainnet:
+    image: ${AZTEC_NODE_IMAGE_MAINNET:-aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0}
+    container_name: dashtec-aztec-node-mainnet
+    command: ["start", "--node"]
+    init: true
+    ports:
+      - "${AZTEC_NODE_P2P_PORT_MAINNET:-40400}:${AZTEC_NODE_P2P_PORT_MAINNET:-40400}/tcp"
+      - "${AZTEC_NODE_P2P_PORT_MAINNET:-40400}:${AZTEC_NODE_P2P_PORT_MAINNET:-40400}/udp"
+    environment:
+      NETWORK: mainnet
+      ETHEREUM_HOSTS: ${AZTEC_NODE_ETHEREUM_HOSTS_MAINNET}
+      L1_CONSENSUS_HOST_URLS: ${AZTEC_NODE_L1_CONSENSUS_HOSTS_MAINNET}
+      AZTEC_PORT: 8080
+      AZTEC_ADMIN_PORT: 8880
+      P2P_ENABLED: "true"
+      # Container and host port are kept equal so the ENR the node advertises
+      # matches what peers can actually dial through the published port.
+      P2P_PORT: ${AZTEC_NODE_P2P_PORT_MAINNET:-40400}
+      P2P_BROADCAST_PORT: ${AZTEC_NODE_P2P_PORT_MAINNET:-40400}
+      P2P_QUERY_FOR_IP: "true"
+      SENTINEL_ENABLED: "true"
+      SENTINEL_HISTORY_LENGTH_IN_EPOCHS: ${AZTEC_NODE_SENTINEL_EPOCHS_MAINNET:-24}
+      SYNC_MODE: ${AZTEC_NODE_SYNC_MODE_MAINNET:-snapshot}
+      DATA_DIRECTORY: /data/data
+      CRS_PATH: /data/crs
+      NODE_OPTIONS: --no-warnings --max-old-space-size=${AZTEC_NODE_HEAP_MB_MAINNET:-4096}
+      LOG_LEVEL: info
+      LOG_JSON: 1
+    volumes:
+      - aztec_node_data_mainnet:/data/data
+      - aztec_node_crs_mainnet:/data/crs
+    restart: unless-stopped
+    stop_grace_period: 2m
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8080/status').then(r => { if (!r.ok) throw new Error(String(r.status)); process.exit(0); }).catch(() => process.exit(1))"
+      interval: 15s
+      timeout: 10s
+      # A snapshot sync can take a long time on first boot; keep the container
+      # out of `unhealthy` until it has had a fair chance to catch up.
+      retries: 5
+      start_period: 30m
+    mem_limit: ${AZTEC_NODE_MEM_LIMIT_MAINNET:-8g}
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "3"
+    profiles:
+      - mainnet
+
+  # Aztec node (testnet). Same shape as mainnet; a distinct P2P port so both can
+  # publish on the one host.
+  aztec-node-testnet:
+    image: ${AZTEC_NODE_IMAGE_TESTNET:-aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0}
+    container_name: dashtec-aztec-node-testnet
+    command: ["start", "--node"]
+    init: true
+    ports:
+      - "${AZTEC_NODE_P2P_PORT_TESTNET:-40500}:${AZTEC_NODE_P2P_PORT_TESTNET:-40500}/tcp"
+      - "${AZTEC_NODE_P2P_PORT_TESTNET:-40500}:${AZTEC_NODE_P2P_PORT_TESTNET:-40500}/udp"
+    environment:
+      NETWORK: testnet
+      ETHEREUM_HOSTS: ${AZTEC_NODE_ETHEREUM_HOSTS_TESTNET}
+      L1_CONSENSUS_HOST_URLS: ${AZTEC_NODE_L1_CONSENSUS_HOSTS_TESTNET}
+      AZTEC_PORT: 8080
+      AZTEC_ADMIN_PORT: 8880
+      P2P_ENABLED: "true"
+      P2P_PORT: ${AZTEC_NODE_P2P_PORT_TESTNET:-40500}
+      P2P_BROADCAST_PORT: ${AZTEC_NODE_P2P_PORT_TESTNET:-40500}
+      P2P_QUERY_FOR_IP: "true"
+      SENTINEL_ENABLED: "true"
+      SENTINEL_HISTORY_LENGTH_IN_EPOCHS: ${AZTEC_NODE_SENTINEL_EPOCHS_TESTNET:-24}
+      SYNC_MODE: ${AZTEC_NODE_SYNC_MODE_TESTNET:-snapshot}
+      DATA_DIRECTORY: /data/data
+      CRS_PATH: /data/crs
+      NODE_OPTIONS: --no-warnings --max-old-space-size=${AZTEC_NODE_HEAP_MB_TESTNET:-4096}
+      LOG_LEVEL: info
+      LOG_JSON: 1
+    volumes:
+      - aztec_node_data_testnet:/data/data
+      - aztec_node_crs_testnet:/data/crs
+    restart: unless-stopped
+    stop_grace_period: 2m
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8080/status').then(r => { if (!r.ok) throw new Error(String(r.status)); process.exit(0); }).catch(() => process.exit(1))"
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30m
+    mem_limit: ${AZTEC_NODE_MEM_LIMIT_TESTNET:-6g}
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "3"
     profiles:
       - testnet
 
@@ -290,8 +418,24 @@ services:
     profiles:
       - testnet
 
+# Name the implicit default network so it is addressable from outside compose.
+# The deploy runs contract discovery in a throwaway `node:20-alpine` container
+# that has to reach http://aztec-node-<network>:8080, and `docker run --network
+# dashtec` only works if the name is fixed rather than derived from the project
+# directory. No service opts in explicitly — this renames the network they all
+# already share.
+networks:
+  default:
+    name: dashtec
+
 volumes:
   postgres_data_mainnet:
   postgres_data_testnet:
   redis_data_mainnet:
   redis_data_testnet:
+  # Aztec node world state + archiver data, and the (large, immutable) CRS. Kept
+  # as named volumes so a `docker compose down` does not force a resync.
+  aztec_node_data_mainnet:
+  aztec_node_crs_mainnet:
+  aztec_node_data_testnet:
+  aztec_node_crs_testnet:

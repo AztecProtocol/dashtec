@@ -54,18 +54,10 @@ export default createConfig({
 
     /**
      * Slashing Proposer Contract
-     * Events: ProposerVote, ProposerPayloadSubmittable, ProposerPayloadSubmitted
-     */
-    SlashingProposer: {
-      chain: config.NETWORK_TYPE,
-      address: config.SLASHING_PROPOSER_CONTRACT_ADDRESS as `0x${string}`,
-      abi: EmpireBaseABI,
-      startBlock: config.START_BLOCK,
-    },
-
-    /**
-     * Tally Slashing Proposer Contract
-     * Events: TallyVoteCast, TallyRoundExecuted, SlashSlashed
+     * Upstream name in Aztec V5 is `SlashingProposer`; V4's Empire-flavoured
+     * slashing proposer was deleted, so only this tally-based ABI is registered
+     * against SLASHING_PROPOSER_CONTRACT_ADDRESS.
+     * Events: VoteCast, RoundExecuted, Slashed
      */
     TallySlashingProposer: {
       chain: config.NETWORK_TYPE,

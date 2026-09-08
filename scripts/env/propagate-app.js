@@ -23,7 +23,9 @@ const envMapRuntime = {
 
   '#network': 'Network Configuration',
   'ETHEREUM_RPC_URL': config.rpc.ethereumUrls,
-  'NEXT_SENTINEL_URL': config.sentinel.proxyUrl,
+  // Our own Aztec node (docker-compose service `aztec-node-<network>`), which
+  // serves the node_* JSON-RPC methods the sentinel proxy used to front.
+  'NEXT_SENTINEL_URL': config.aztecNode.url,
   'ETHEREUM_EXPLORER_URL': config.app.ethereumExplorerUrl,
   'AZTEC_SCAN_URL': config.app.aztecScanUrl || '',
   'CHAIN_NAME': config.network.type,

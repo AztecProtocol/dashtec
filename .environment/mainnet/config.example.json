@@ -11,20 +11,28 @@
     "url": "redis://:dashtec@redis-mainnet:6379"
   },
   "rpc": {
-    "ethereumUrls": "<<SECRET: injected from MAINNET_ETHEREUM_RPC_URL>>"
+    "ethereumUrls": "<<SECRET: injected from MAINNET_ETHEREUM_RPC_URL>>",
+    "consensusUrls": "<<SECRET: injected from MAINNET_L1_CONSENSUS_HOST_URLS>>"
   },
-  "sentinel": {
-    "proxyUrl": "<<SECRET: injected from MAINNET_SENTINEL_PROXY_URL>>"
+  "aztecNode": {
+    "url": "http://aztec-node-mainnet:8080",
+    "image": "aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0",
+    "network": "mainnet",
+    "p2pPort": 40400,
+    "syncMode": "snapshot",
+    "sentinelHistoryLengthInEpochs": 24,
+    "maxOldSpaceSizeMb": 4096,
+    "memLimit": "8g"
   },
   "contracts": {
-    "rollupAddress": "0x603bb2c05D474794ea97805e8De69bCcFb3bCA12",
-    "governanceAddress": "0x1102471Eb3378FEE427121c9EfcEa452E4B6B75e",
-    "governanceProposerAddress": "0x06Ef1DcF87E419C48B94a331B252819FADbD63ef",
-    "slashingProposerAddress": "0x7a318c3DaA9f21f8fc8238c65755eB0394Fbf189",
-    "slashFactoryAddress": "0x",
-    "gseAddress": "0xa92ecFD0E70c9cd5E5cd76c50Af0F7Da93567a4f",
+    "rollupAddress": "0x0000000000000000000000000000000000000000",
+    "governanceAddress": "0x0000000000000000000000000000000000000000",
+    "governanceProposerAddress": "0x0000000000000000000000000000000000000000",
+    "slashingProposerAddress": "0x0000000000000000000000000000000000000000",
+    "gseAddress": "0x0000000000000000000000000000000000000000",
     "stakingRegistryAddress": "0x042dF8f42790d6943F41C25C2132400fd727f452",
-    "registryAddress": "0x0000000000000000000000000000000000000000"
+    "registryAddress": "0x0000000000000000000000000000000000000000",
+    "_comment": "Discovered by `pnpm env:discover mainnet` from the Aztec node (node_getL1ContractAddresses) plus Rollup.getSlasher()/Slasher.PROPOSER(). stakingRegistryAddress is not part of the Aztec core deployment and must be set by hand."
   },
   "collectors": {
     "validatorStats": {
@@ -56,7 +64,8 @@
   "ponder": {
     "port": 42069,
     "maxHealthcheckDuration": 240,
-    "startBlock": 20000000
+    "startBlock": 0,
+    "_comment": "startBlock is set by `pnpm env:discover mainnet` to the rollup contract deployment block."
   },
   "app": {
     "url": "https://dashtec.xyz",

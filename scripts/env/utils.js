@@ -23,7 +23,31 @@ export function loadConfig(network) {
     process.exit(1);
   }
 
-  return JSON.parse(readFileSync(configPath, 'utf-8'));
+  const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+  assertDiscovered(config, network);
+  return config;
+}
+
+/**
+ * Contract addresses are filled in by scripts/env/discover-contracts.js from the
+ * running Aztec node, and ship as zero-address placeholders. Propagating those
+ * would produce .env files that pass every downstream regex check and then index
+ * nothing, so fail here instead — a loud stop is much cheaper to diagnose than an
+ * indexer that quietly stays empty.
+ */
+function assertDiscovered(config, network) {
+  const ZERO = '0x0000000000000000000000000000000000000000';
+  const undiscovered = Object.entries(config.contracts ?? {})
+    .filter(([key, value]) => !key.startsWith('_') && String(value).toLowerCase() === ZERO)
+    .map(([key]) => key);
+
+  if (undiscovered.length === 0) return;
+
+  console.error(`❌ ${network}: contract addresses are still placeholders: ${undiscovered.join(', ')}`);
+  console.error('💡 Start the Aztec node and discover them first:');
+  console.error(`     docker compose --profile ${network} up -d --wait aztec-node-${network}`);
+  console.error(`     pnpm env:discover ${network}`);
+  process.exit(1);
 }
 
 /**

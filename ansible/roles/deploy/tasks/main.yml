@@ -1,4 +1,17 @@
 ---
+- name: Propagate config into package .env files
+  # Node-only script (no deps); run via an ephemeral container so the host needs
+  # no Node toolchain. Generates apps/web/.env(.build) and packages/*/.env.
+  # Runs here rather than in the `config` role because it has to read the
+  # contract addresses the `aztec_node` role discovered from the running node.
+  ansible.builtin.command:
+    cmd: >-
+      docker run --rm
+      -v {{ app_dir }}:/app -w /app
+      node:20-alpine node scripts/env/propagate-all.js {{ item }}
+  loop: "{{ dashtec_networks }}"
+  changed_when: true
+
 - name: Build images and start each network profile
   ansible.builtin.command:
     cmd: docker compose --profile {{ item }} up -d --build

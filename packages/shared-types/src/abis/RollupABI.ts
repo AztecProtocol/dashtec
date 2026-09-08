@@ -388,6 +388,10 @@ export const RollupABI = [
                 ],
               },
               { name: 'totalManaUsed', type: 'uint256' },
+              // Added in Aztec V5 (ProposedHeaderLib.ProposedHeader). Its presence changes
+              // the propose() selector, so v4 calldata will not decode against this ABI and
+              // v5 calldata will not decode against a v4 ABI.
+              { name: 'accumulatedFees', type: 'uint256' },
             ],
           },
         ],
@@ -461,6 +465,10 @@ export const ProposeABI = {
               ],
             },
             { name: 'totalManaUsed', type: 'uint256' },
+            // Added in Aztec V5 (ProposedHeaderLib.ProposedHeader). Its presence changes
+            // the propose() selector, so v4 calldata will not decode against this ABI and
+            // v5 calldata will not decode against a v4 ABI.
+            { name: 'accumulatedFees', type: 'uint256' },
           ],
         },
       ],

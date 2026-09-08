@@ -29,11 +29,24 @@ origin_domain = "origin.dashtec.xyz"
 # Prefer exporting TF_VAR_hcloud_token instead of putting it here.
 hcloud_token = "your-hetzner-cloud-api-token"
 
-hcloud_location = "nbg1"     # nbg1/fsn1/hel1 (EU), ash/hil (US), sin (Singapore)
+# nbg1/fsn1/hel1 (EU), ash/hil (US), sin (Singapore). The deployed host is in
+# hel1 — changing this on an existing stack replaces the server and its volume,
+# so leave it alone unless you are building a new one from scratch.
+hcloud_location = "hel1"
 server_type     = "cx53"     # 16 vCPU / 32 GB (x86). cx43 (8/16) for a single network.
 server_image    = "ubuntu-24.04"
-data_volume_size = 100       # GB, mounted at /var/lib/docker
+data_volume_size = 100       # GB, mounted at /var/lib/docker. Also carries the
+                             # two Aztec nodes' data + CRS. Grow it if the nodes
+                             # and Postgres crowd it out — Hetzner volumes resize
+                             # online, but never shrink.
 enable_backups   = true      # Hetzner daily backups (+~20% of server price)
+
+# Public P2P ports for the self-hosted Aztec nodes, opened TCP+UDP on the host
+# firewall. Must match AZTEC_NODE_P2P_PORT_<NETWORK> in docker-compose.yml.
+# aztec_node_p2p_ports = [
+#   { network = "mainnet", port = 40400 },
+#   { network = "testnet", port = 40500 },
+# ]
 
 # Administration is over Tailscale SSH (no public SSH port is opened).
 # Create a reusable, pre-authorized, tagged pre-auth key in the Tailscale admin

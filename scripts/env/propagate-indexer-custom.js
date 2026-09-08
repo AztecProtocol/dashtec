@@ -17,7 +17,7 @@ const envMap = {
 
   '#rpc': 'RPC',
   'RPC_URLS': config.rpc.ethereumUrls,
-  'VALIDATOR_STATS_RPC_URL': config.sentinel.proxyUrl,
+  'VALIDATOR_STATS_RPC_URL': config.aztecNode.url,
 
   '#contracts': 'Contract Addresses',
   'ROLLUP_CONTRACT_ADDRESS': config.contracts.rollupAddress,

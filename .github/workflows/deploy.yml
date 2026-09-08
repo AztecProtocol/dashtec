@@ -27,9 +27,17 @@ jobs:
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          # The tailnet ACL must allow `tag:ci` to SSH to the server's tag as
-          # root with `action: accept` (not `check`, which needs interactivity).
-          tags: tag:ci
+          # `tag:dashtec-ci` must exist in the tailnet ACL's tagOwners, and the
+          # ACL must allow it to SSH to `tag:dashtec` as root with
+          # `action: accept` (not `check`, which needs a browser approval).
+          # Both live in foundation-iac/rpc.aztec.foundation/tailscale.tf, which
+          # owns the tailnet ACL singleton for the whole tailnet.
+          #
+          # This was `tag:ci`, which no tagOwner ever granted — the OAuth client
+          # could not mint it, so this step failed on every run and the deploy
+          # never reached Ansible. Renamed to match the `tag:eth-rpc-ci`
+          # convention rather than claim a bare `tag:ci` in a shared tailnet.
+          tags: tag:dashtec-ci
 
       - name: Install Ansible
         run: pipx install --include-deps ansible
@@ -49,11 +57,15 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
           # Per-network secrets injected into the committed config.json.
+          # L1 execution RPC (Ponder, collectors, Aztec node) and L1 beacon API
+          # (Aztec node only — it fetches the blobs carrying checkpoint data).
+          # There is no *_SENTINEL_PROXY_URL any more: the dashboard now talks to
+          # the Aztec node we run ourselves in docker-compose.
           MAINNET_ETHEREUM_RPC_URL: ${{ secrets.MAINNET_ETHEREUM_RPC_URL }}
-          MAINNET_SENTINEL_PROXY_URL: ${{ secrets.MAINNET_SENTINEL_PROXY_URL }}
+          MAINNET_L1_CONSENSUS_HOST_URLS: ${{ secrets.MAINNET_L1_CONSENSUS_HOST_URLS }}
           MAINNET_SESSION_PASSWORD: ${{ secrets.MAINNET_SESSION_PASSWORD }}
           TESTNET_ETHEREUM_RPC_URL: ${{ secrets.TESTNET_ETHEREUM_RPC_URL }}
-          TESTNET_SENTINEL_PROXY_URL: ${{ secrets.TESTNET_SENTINEL_PROXY_URL }}
+          TESTNET_L1_CONSENSUS_HOST_URLS: ${{ secrets.TESTNET_L1_CONSENSUS_HOST_URLS }}
           TESTNET_SESSION_PASSWORD: ${{ secrets.TESTNET_SESSION_PASSWORD }}
           # OAuth, shared across networks (one app each). IDs are public
           # (variables); secrets are sensitive.

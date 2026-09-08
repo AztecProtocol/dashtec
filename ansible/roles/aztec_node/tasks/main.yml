@@ -1,0 +1,33 @@
+---
+# Brings up the self-hosted Aztec node for each network and discovers the V5 L1
+# contract addresses from it. Runs after `config` (which renders the root .env
+# the node services interpolate) and before `deploy` (which propagates config.json
+# into the package .env files and starts everything else).
+
+- name: Start the Aztec node for each network and wait for it to report healthy
+  # `--wait` blocks on the compose healthcheck (GET /status on the node's RPC
+  # port). A first boot restores a snapshot and then catches up to the chain tip,
+  # so the timeout is generous; a restart with a warm data volume returns in
+  # under a minute.
+  ansible.builtin.command:
+    cmd: >-
+      docker compose --profile {{ item }} up -d --wait
+      --wait-timeout {{ aztec_node_ready_timeout_seconds }}
+      aztec-node-{{ item }}
+    chdir: "{{ app_dir }}"
+  loop: "{{ dashtec_networks }}"
+  changed_when: true
+
+- name: Discover the Aztec V5 contract addresses from the node
+  # Writes contracts.* and ponder.startBlock into config.json, so an Aztec
+  # upgrade that redeploys the rollup is picked up by a redeploy instead of a
+  # hand-edited config. Node-only script (no deps), run in a throwaway container
+  # joined to the compose network so it can reach http://aztec-node-<network>:8080.
+  ansible.builtin.command:
+    cmd: >-
+      docker run --rm --network dashtec
+      -v {{ app_dir }}:/app -w /app
+      node:20-alpine node scripts/env/discover-contracts.js {{ item }}
+    chdir: "{{ app_dir }}"
+  loop: "{{ dashtec_networks }}"
+  changed_when: true

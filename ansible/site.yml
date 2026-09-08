@@ -8,5 +8,6 @@
   roles:
     - docker # Docker Engine + compose plugin + git
     - repo # clone/update /opt/dashtec
-    - config # config.json -> env:propagate -> root .env (secrets from env)
-    - deploy # docker compose up per network profile
+    - config # config.json secrets -> root .env (secrets from env)
+    - aztec_node # start our own Aztec node, discover V5 contract addresses
+    - deploy # env:propagate -> docker compose up per network profile

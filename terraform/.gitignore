@@ -3,8 +3,12 @@
 *.tfstate
 *.tfstate.*
 *.tfplan
-terraform.tfvars
-*.auto.tfvars
+# Every tfvars variant, not just the two canonical names — `prod.tfvars` or
+# `secrets.tfvars` would otherwise be committed in the clear. The .example
+# template is re-included below.
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
 
 # Crash logs
 crash.log

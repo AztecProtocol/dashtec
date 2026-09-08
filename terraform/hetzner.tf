@@ -32,6 +32,38 @@ resource "hcloud_firewall" "host" {
     description = "Testnet web from CloudFront"
   }
 
+  # Aztec node P2P (libp2p discv5 + gossip), one port per network. The nodes
+  # advertise these in their ENR (P2P_QUERY_FOR_IP resolves the public IPv4), so
+  # they must be reachable from the whole internet for peers to dial in. Keep in
+  # sync with AZTEC_NODE_P2P_PORT_* in docker-compose.yml.
+  dynamic "rule" {
+    for_each = { for p in var.aztec_node_p2p_ports : p.network => p }
+
+    content {
+      direction   = "in"
+      protocol    = "tcp"
+      port        = rule.value.port
+      source_ips  = ["0.0.0.0/0", "::/0"]
+      description = "Aztec ${rule.key} node P2P (TCP)"
+    }
+  }
+
+  dynamic "rule" {
+    for_each = { for p in var.aztec_node_p2p_ports : p.network => p }
+
+    content {
+      direction   = "in"
+      protocol    = "udp"
+      port        = rule.value.port
+      source_ips  = ["0.0.0.0/0", "::/0"]
+      description = "Aztec ${rule.key} node P2P (UDP discv5)"
+    }
+  }
+
+  # The Aztec node JSON-RPC (:8080) is deliberately NOT published to the host and
+  # has no rule here: sibling compose services reach it on the compose network as
+  # http://aztec-node-<network>:8080.
+
   # No public SSH rule: administration is over Tailscale SSH (WireGuard tailnet),
   # which is established by outbound connections and needs no inbound port.
 }
@@ -73,6 +105,25 @@ resource "hcloud_server" "host" {
 
   labels = {
     project = "dashtec"
+  }
+
+  lifecycle {
+    # cloud-init runs once at first boot and is deliberately not idempotent (see
+    # templates/user_data.sh.tftpl), so user_data has no effect on a running
+    # host — but Hetzner treats a change to it as a replacement. The provider
+    # only keeps a hash of it in state, so anyone applying with a different
+    # `tailscale_auth_key` (a rotated key, or a value reconstructed for a local
+    # terraform.tfvars) would silently destroy and rebuild the server, taking
+    # the Postgres/Redis and Aztec-node volumes' attachment with it.
+    #
+    # Changing the bootstrap script therefore needs a deliberate rebuild — taint
+    # the server, or temporarily drop this — rather than riding along on an
+    # unrelated apply.
+    ignore_changes = [user_data]
+
+    # Seatbelt: the data volume already has prevent_destroy, but the server
+    # holding it is what an accidental replacement actually takes down.
+    prevent_destroy = true
   }
 }
 

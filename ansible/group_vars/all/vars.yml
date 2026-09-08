@@ -13,17 +13,29 @@ dashtec_networks:
 
 # Per-network secrets, sourced from the environment (GitHub Actions Secrets in
 # CI, or `export`ed locally). These are injected into the committed config.json
-# at deploy time; NEXT_SENTINEL_URL / VALIDATOR_STATS_RPC_URL in the root .env
-# are set to sentinel_proxy_url (the Aztec node JSON-RPC endpoint).
+# at deploy time.
+#
+# ethereum_rpc_url is the L1 execution-layer RPC, used by Ponder, the custom
+# collectors, and the Aztec node. l1_consensus_urls is the L1 beacon-chain API;
+# only the Aztec node needs it, to fetch the blobs that carry checkpoint data.
+#
+# There is no longer a sentinel_proxy_url: NEXT_SENTINEL_URL and
+# VALIDATOR_STATS_RPC_URL now point at our own aztec-node-<network> container
+# (see .environment/<network>/config.json -> aztecNode.url).
 network_secrets:
   mainnet:
     ethereum_rpc_url: "{{ lookup('env', 'MAINNET_ETHEREUM_RPC_URL') }}"
-    sentinel_proxy_url: "{{ lookup('env', 'MAINNET_SENTINEL_PROXY_URL') }}"
+    l1_consensus_urls: "{{ lookup('env', 'MAINNET_L1_CONSENSUS_HOST_URLS') }}"
     session_password: "{{ lookup('env', 'MAINNET_SESSION_PASSWORD') }}"
   testnet:
     ethereum_rpc_url: "{{ lookup('env', 'TESTNET_ETHEREUM_RPC_URL') }}"
-    sentinel_proxy_url: "{{ lookup('env', 'TESTNET_SENTINEL_PROXY_URL') }}"
+    l1_consensus_urls: "{{ lookup('env', 'TESTNET_L1_CONSENSUS_HOST_URLS') }}"
     session_password: "{{ lookup('env', 'TESTNET_SESSION_PASSWORD') }}"
+
+# How long to wait for a node to answer /status before giving up on contract
+# discovery. A first boot restores from a snapshot and then catches up to the
+# chain tip, which is far slower than a restart with a warm data volume.
+aztec_node_ready_timeout_seconds: 3600
 
 # OAuth config is shared across networks (one Discord/X app with both redirect
 # URIs registered). Optional — auth is disabled if empty. Client IDs are public

@@ -1,5 +1,7 @@
 import { RollupABI, ProposeABI } from './RollupABI';
-import { SlashFactoryABI } from './SlashFactoryABI';
+// Aztec V5 renamed this contract to SlashingProposer (l1-contracts/src/core/slashing/
+// SlashingProposer.sol) and deleted EmpireSlashingProposer. The events and view
+// functions are byte-identical, so the ABI is unchanged.
 import { TallySlashingProposerABI } from './TallySlashingProposerABI';
 import { EmpireBaseABI } from './EmpireBaseABI';
 import { GovernorContractABI } from './GovernorContractABI';
@@ -11,11 +13,10 @@ import { PayloadABI } from './PayloadABI';
 import { Multicall3ABI } from './Multicall3ABI';
 import { SlasherABI, GseViewABI, GovernanceABI } from './DerivedContractsABI';
 
-export { RollupABI, ProposeABI, SlashFactoryABI, TallySlashingProposerABI, EmpireBaseABI, GovernorContractABI, StakingRegistryABI, RegistryABI, GseABI, ERC20ABI, PayloadABI, Multicall3ABI, SlasherABI, GseViewABI, GovernanceABI };
+export { RollupABI, ProposeABI, TallySlashingProposerABI, EmpireBaseABI, GovernorContractABI, StakingRegistryABI, RegistryABI, GseABI, ERC20ABI, PayloadABI, Multicall3ABI, SlasherABI, GseViewABI, GovernanceABI };
 
 export const ABIS = {
   Rollup: RollupABI,
-  SlashFactory: SlashFactoryABI,
   TallySlashingProposer: TallySlashingProposerABI,
   EmpireBase: EmpireBaseABI,
   GovernorContract: GovernorContractABI,

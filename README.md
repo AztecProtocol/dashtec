@@ -9,7 +9,14 @@ Blockchain --> Ponder Indexer --> Materializer --> PostgreSQL --> REST API --> D
                                        ^
                                        |
                               Custom Collectors
+                                       ^
+                                       |
+                       Aztec node (self-hosted, per network)
 ```
+
+dashtec runs its own Aztec node per network rather than depending on an external
+RPC. It serves the `node_*` methods the dashboard needs and is the source of
+truth for which L1 contracts to index — see [docs/aztec-node.md](docs/aztec-node.md).
 
 ## Project Structure
 
@@ -48,7 +55,12 @@ docker compose --profile mainnet up -d postgres-mainnet redis-mainnet
 
 # Configure environment
 cp .environment/mainnet/config.example.json .environment/mainnet/config.json
-# Edit config.json with your RPC endpoints, contract addresses, etc.
+# Edit config.json: rpc.ethereumUrls (L1 execution) and rpc.consensusUrls (L1 beacon).
+# Leave contracts.* at their zero placeholders — the next step fills them in.
+
+# Start our Aztec node, then discover the contract addresses from it
+docker compose --profile mainnet up -d --wait --wait-timeout 3600 aztec-node-mainnet
+pnpm env:discover mainnet
 
 # Propagate config to all packages
 pnpm env:propagate mainnet
@@ -72,6 +84,7 @@ pnpm turbo typecheck                  # Typecheck everything
 pnpm db:generate                      # Generate Prisma client
 pnpm db:migrate                       # Run database migrations
 pnpm db:studio                        # Open Prisma Studio
+pnpm env:discover <mainnet|testnet>   # Read contract addresses from the Aztec node
 pnpm env:propagate <mainnet|testnet>  # Propagate env config to all packages
 pnpm --filter @dashtec/<pkg> dev      # Dev a single package
 ```
