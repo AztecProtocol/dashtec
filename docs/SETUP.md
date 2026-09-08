@@ -137,6 +137,7 @@ also the source of truth for contract addresses (see `pnpm env:discover` below).
 | `network` | string | `"mainnet"` | Passed as `NETWORK`; the node resolves its own bootnodes, registry address and snapshot URLs from the published network config. |
 | `p2pPort` | number | `40400` | Public P2P port (TCP + UDP discv5), advertised in the node's ENR. Must match `aztec_node_p2p_ports` in `terraform/variables.tf` or inbound peers cannot dial in. |
 | `syncMode` | string | `"snapshot"` | `snapshot` restores from a published snapshot before following the chain; `full` replays from genesis. |
+| `archiverSkipHistoricalLogsCheck` | boolean | `false` (mainnet), `true` (testnet) | Lets the archiver start against an L1 RPC that prunes historical logs. The check exists because a pruning RPC makes the archiver *silently* miss L1 data; only disable it where no archival endpoint is available. See [aztec-node.md](aztec-node.md). |
 | `sentinelHistoryLengthInEpochs` | number | `24` | How many epochs of validator history the node's sentinel keeps, which bounds what `node_getValidatorsStats` can return. |
 | `maxOldSpaceSizeMb` | number | `4096` | Node.js heap cap inside the container. |
 | `memLimit` | string | `"8g"` | Container memory limit. Keep it comfortably above `maxOldSpaceSizeMb`. |

@@ -60,6 +60,48 @@ Everything comes from `.environment/<network>/config.json`:
   needs this to fetch the blobs carrying checkpoint data; an execution RPC is not
   a substitute.
 
+### The L1 RPC must retain historical logs
+
+Every URL in `rpc.ethereumUrls` has to serve logs back to the Rollup's deploy
+block. The node's archiver checks this at startup and **refuses to boot** if it
+fails, with `does not return historical logs for the Rollup contract` — a
+deliberate guard, because a pruning node makes the archiver silently miss L1 data
+rather than error. The container then exits 0 and restart-loops, which surfaces
+as `container dashtec-aztec-node-<network> is unhealthy` during a deploy.
+
+This bites on public endpoints, and on Sepolia the two free options fail in
+mutually exclusive ways. Both measured against testnet Rollup `0xd73a91bd…`
+(deploy block 11250166):
+
+| Endpoint | Historical logs | Startup burst |
+| -------- | --------------- | ------------- |
+| `https://sepolia.gateway.tenderly.co/` | returns the deploy-block log — **retains** | **HTTP 429**, `rate limit exceeded` |
+| `https://ethereum-sepolia-rpc.publicnode.com/` | `state at block #5830014 is pruned` | fine |
+| `https://rpc.aztec.foundation/main/evm/1` (mainnet) | archival reth — fine | fine (keyed, premium budget) |
+
+Node startup calls `getL1ContractsConfig`, which fires ~20 `eth_call`s in a single
+`Promise.all` — enough to trip Tenderly's unauthenticated gateway. So Tenderly
+alone fails on rate limits, publicnode alone fails the log check, and neither is
+usable on its own.
+
+**Testnet therefore runs both hosts with the check disabled**, matching
+aztecscan's configuration: `rpc.ethereumUrls` lists Tenderly first with publicnode
+behind it for 429 failover, and `aztecNode.archiverSkipHistoricalLogsCheck` is
+`true`. Mainnet keeps the check on (`false`) — `rpc.aztec.foundation` is archival,
+so there is nothing to bypass and the guard stays where it has value.
+
+Know what that buys and costs. It gets the testnet node running with no new
+credentials. But the same URLs feed Ponder and the custom collectors, and a pruned
+endpoint returns *empty* `eth_getLogs` results rather than an error — so viem's
+`fallback()` never fails over on correctness grounds, only on transport errors.
+Testnet indexing can therefore be incomplete with nothing in the logs to say so.
+Treat testnet dashboard data as best-effort until the endpoint changes.
+
+The clean fix is a keyed archive-grade Sepolia endpoint (Alchemy, Infura, or a
+Tenderly account rather than its public gateway): it resolves the rate limit and
+the pruning together, at which point set `archiverSkipHistoricalLogsCheck` back to
+`false` for testnet and drop publicnode from `rpc.ethereumUrls`.
+
 Ansible's `config` role renders these into the root `.env` as `AZTEC_NODE_*`
 variables, which `docker-compose.yml` interpolates. `config.json` stays the single
 source of truth; nothing about the node is hardcoded in the compose file.

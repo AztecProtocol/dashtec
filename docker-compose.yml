@@ -253,6 +253,10 @@ services:
       SENTINEL_ENABLED: "true"
       SENTINEL_HISTORY_LENGTH_IN_EPOCHS: ${AZTEC_NODE_SENTINEL_EPOCHS_MAINNET:-24}
       SYNC_MODE: ${AZTEC_NODE_SYNC_MODE_MAINNET:-snapshot}
+      # Whether the archiver may start against an L1 RPC that prunes historical
+      # logs. Off for mainnet (archival reth); on for testnet, where no free
+      # Sepolia endpoint both retains logs and survives startup. See docs/aztec-node.md.
+      ARCHIVER_SKIP_HISTORICAL_LOGS_CHECK: ${AZTEC_NODE_SKIP_HISTORICAL_LOGS_CHECK_MAINNET:-false}
       DATA_DIRECTORY: /data/data
       CRS_PATH: /data/crs
       NODE_OPTIONS: --no-warnings --max-old-space-size=${AZTEC_NODE_HEAP_MB_MAINNET:-4096}
@@ -307,6 +311,10 @@ services:
       SENTINEL_ENABLED: "true"
       SENTINEL_HISTORY_LENGTH_IN_EPOCHS: ${AZTEC_NODE_SENTINEL_EPOCHS_TESTNET:-24}
       SYNC_MODE: ${AZTEC_NODE_SYNC_MODE_TESTNET:-snapshot}
+      # Whether the archiver may start against an L1 RPC that prunes historical
+      # logs. Off for mainnet (archival reth); on for testnet, where no free
+      # Sepolia endpoint both retains logs and survives startup. See docs/aztec-node.md.
+      ARCHIVER_SKIP_HISTORICAL_LOGS_CHECK: ${AZTEC_NODE_SKIP_HISTORICAL_LOGS_CHECK_TESTNET:-true}
       DATA_DIRECTORY: /data/data
       CRS_PATH: /data/crs
       NODE_OPTIONS: --no-warnings --max-old-space-size=${AZTEC_NODE_HEAP_MB_TESTNET:-4096}

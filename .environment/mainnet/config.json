@@ -20,6 +20,7 @@
     "network": "mainnet",
     "p2pPort": 40400,
     "syncMode": "snapshot",
+    "archiverSkipHistoricalLogsCheck": false,
     "sentinelHistoryLengthInEpochs": 24,
     "maxOldSpaceSizeMb": 4096,
     "memLimit": "8g"
