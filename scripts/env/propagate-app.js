@@ -52,11 +52,17 @@ const envMapRuntime = {
 };
 
 
+// Baked into the client bundle by `next build` (Dockerfile copies this to
+// apps/web/.env.production). CHAIN_NAME is included because next.config.ts falls
+// back to it — it is otherwise a runtime-only var, and leaving it out of the
+// build env is how a stale apps/web/.env once decided the network switcher's
+// default.
 const envMapBuild = {
   'ETHEREUM_EXPLORER_URL': config.app.ethereumExplorerUrl,
   'NEXT_PUBLIC_MAINNET_DOMAIN': config.app.domains?.mainnet || 'dashtec.xyz',
   'NEXT_PUBLIC_TESTNET_DOMAIN': config.app.domains?.sepolia || 'testnet.dashtec.xyz',
   'NEXT_PUBLIC_NETWORK_TYPE': config.network.type,
+  'CHAIN_NAME': config.network.type,
 };
 
 const appsDir = join(ROOT_DIR, 'apps', 'web');
