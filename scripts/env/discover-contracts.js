@@ -65,22 +65,66 @@ const l1Url = l1Urls[0];
 
 let nextId = 1;
 
-/** Single JSON-RPC call. Throws on transport failure, non-2xx, or an RPC error. */
-async function rpc(url, method, params = [], { timeoutMs = 30_000 } = {}) {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: nextId++, method, params }),
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-  if (!response.ok) {
-    throw new Error(`${method}: HTTP ${response.status} from ${redact(url)}`);
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Single JSON-RPC call, retrying on throttling and transient transport errors.
+ *
+ * The deployment-block search below is ~25 sequential eth_getCode calls, which is
+ * enough to trip the rate limit on an unauthenticated public endpoint — Sepolia's
+ * Tenderly gateway answers 429 partway through and the whole deploy fails. Retry
+ * with exponential backoff and honour Retry-After when the server sends it.
+ *
+ * Only throttling, 5xx and network errors are retried. A JSON-RPC error (a
+ * pruned-state response, say) is a real answer and is surfaced immediately.
+ */
+async function rpc(url, method, params = [], { timeoutMs = 30_000, attempts = 6 } = {}) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    let response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: nextId++, method, params }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch (error) {
+      // Transport-level failure (timeout, DNS, connection reset).
+      lastError = new Error(`${method}: ${error.message} (${redact(url)})`);
+      if (attempt === attempts) break;
+      await sleep(backoffMs(attempt));
+      continue;
+    }
+
+    if (response.status === 429 || response.status >= 500) {
+      lastError = new Error(`${method}: HTTP ${response.status} from ${redact(url)}`);
+      if (attempt === attempts) break;
+      const retryAfter = Number(response.headers.get('retry-after'));
+      await sleep(Number.isFinite(retryAfter) && retryAfter > 0
+        ? Math.min(retryAfter * 1000, 30_000)
+        : backoffMs(attempt));
+      continue;
+    }
+
+    if (!response.ok) {
+      throw new Error(`${method}: HTTP ${response.status} from ${redact(url)}`);
+    }
+
+    const payload = await response.json();
+    if (payload.error) {
+      throw new Error(`${method}: ${payload.error.message ?? JSON.stringify(payload.error)}`);
+    }
+    return payload.result;
   }
-  const payload = await response.json();
-  if (payload.error) {
-    throw new Error(`${method}: ${payload.error.message ?? JSON.stringify(payload.error)}`);
-  }
-  return payload.result;
+
+  throw lastError;
+}
+
+/** 1s, 2s, 4s, 8s, 16s (capped), with jitter so retries don't align. */
+function backoffMs(attempt) {
+  return Math.min(1000 * 2 ** (attempt - 1), 16_000) + Math.floor(Math.random() * 250);
 }
 
 /** Strip credentials/api keys so RPC URLs are safe to print in deploy logs. */
@@ -115,11 +159,19 @@ function requireAddress(value, label) {
 /**
  * Lowest block at which `address` has code. Binary search over eth_getCode:
  * ~log2(headBlock) calls, versus scanning logs from genesis.
+ *
+ * Those calls are sequential and land within a couple of seconds, which is
+ * enough to trip a public endpoint's rate limit even though the total is small.
+ * `rpc()` retries on 429, but a short pause between probes avoids most of them —
+ * ~25 probes, so the added wall-clock is a few seconds either way.
  */
 async function findDeploymentBlock(address) {
+  const PROBE_SPACING_MS = 150;
+
   const head = Number(await rpc(l1Url, 'eth_blockNumber', []));
   const hasCode = async (block) => {
     const code = await rpc(l1Url, 'eth_getCode', [address, `0x${block.toString(16)}`]);
+    await sleep(PROBE_SPACING_MS);
     return typeof code === 'string' && code !== '0x' && code !== '0x0';
   };
 
