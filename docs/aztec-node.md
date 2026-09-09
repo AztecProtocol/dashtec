@@ -28,8 +28,14 @@ Same Hetzner host as the rest of the stack, as two docker-compose services:
 | `aztec-node-testnet` | `testnet` | `http://aztec-node-testnet:8080` | 40500 TCP+UDP | 6g |
 
 The RPC port is deliberately **not** published to the host. Only sibling compose
-services reach it, over the compose network (named `dashtec` in
-`docker-compose.yml` so `docker run --network dashtec` can join it too).
+services reach it, over the compose network — `dashtec_default`, from the
+project name pinned at the top of `docker-compose.yml`.
+
+Resist renaming that network to something tidier. Doing so leaves every
+already-running container on the old `dashtec_default` while only freshly created
+ones join the new name, which quietly severs the indexers and web app from the
+nodes they are supposed to call. Pin the project name instead; the default
+network name follows from it.
 
 The P2P ports **are** published, and are opened for the whole internet in
 `terraform/hetzner.tf` via the `aztec_node_p2p_ports` variable. The node resolves
@@ -124,7 +130,7 @@ view in dashtec is empty.
 2. `aztec_node` runs `docker compose up -d --wait aztec-node-<network>` (blocking
    on the compose healthcheck, i.e. `GET /status`), then runs
    `scripts/env/discover-contracts.js` in a throwaway `node:20-alpine` container
-   joined to the `dashtec` network.
+   joined to the `dashtec_default` network.
 3. `deploy` runs `env:propagate` — now reading the freshly discovered addresses —
    builds images, starts every other service, and applies DB migrations.
 
@@ -162,7 +168,7 @@ docker compose --profile mainnet exec aztec-node-mainnet \
   node -e "fetch('http://127.0.0.1:8080/status').then(r=>r.text()).then(console.log)"
 
 # re-discover after an Aztec network upgrade
-docker run --rm --network dashtec -v /opt/dashtec:/app -w /app \
+docker run --rm --network dashtec_default -v /opt/dashtec:/app -w /app \
   node:20-alpine node scripts/env/discover-contracts.js mainnet
 ```
 

@@ -23,9 +23,15 @@
   # upgrade that redeploys the rollup is picked up by a redeploy instead of a
   # hand-edited config. Node-only script (no deps), run in a throwaway container
   # joined to the compose network so it can reach http://aztec-node-<network>:8080.
+  #
+  # `dashtec_default` is compose's default network for the project, whose name is
+  # pinned to `dashtec` at the top of docker-compose.yml. Do NOT rename the
+  # network itself to make this line prettier: the app containers predate any such
+  # rename and stay on the old network, which silently splits the nodes off from
+  # the indexers and web that need to reach them.
   ansible.builtin.command:
     cmd: >-
-      docker run --rm --network dashtec
+      docker run --rm --network dashtec_default
       -v {{ app_dir }}:/app -w /app
       node:20-alpine node scripts/env/discover-contracts.js {{ item }}
     chdir: "{{ app_dir }}"

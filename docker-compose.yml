@@ -1,4 +1,9 @@
-version: "3.8"
+# Pin the compose project name. It otherwise defaults to the basename of whatever
+# directory the stack is checked out in, and the deploy derives the default
+# network name (`<project>_default`) from it to run contract discovery in a
+# throwaway container. Pinning the project — rather than renaming the network —
+# keeps every service on the one network compose creates by default.
+name: dashtec
 
 services:
   web:
@@ -425,16 +430,6 @@ services:
       retries: 5
     profiles:
       - testnet
-
-# Name the implicit default network so it is addressable from outside compose.
-# The deploy runs contract discovery in a throwaway `node:20-alpine` container
-# that has to reach http://aztec-node-<network>:8080, and `docker run --network
-# dashtec` only works if the name is fixed rather than derived from the project
-# directory. No service opts in explicitly — this renames the network they all
-# already share.
-networks:
-  default:
-    name: dashtec
 
 volumes:
   postgres_data_mainnet:
