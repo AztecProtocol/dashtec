@@ -28,7 +28,14 @@ services:
         condition: service_started
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      # These images are Node runtimes with no curl/wget on PATH, so a
+      # curl-based test fails regardless of the app's real state and pins the
+      # container to "unhealthy" forever. Probe with node itself.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
       interval: 30s
       timeout: 10s
       retries: 3
@@ -52,7 +59,14 @@ services:
       REDIS_URL: redis://:dashtec@${REDIS_HOST:-redis-mainnet}:6379
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:42069/health"]
+      # These images are Node runtimes with no curl/wget on PATH, so a
+      # curl-based test fails regardless of the app's real state and pins the
+      # container to "unhealthy" forever. Probe with node itself.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:42069/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
       interval: 30s
       timeout: 10s
       retries: 3
@@ -85,7 +99,14 @@ services:
         condition: service_started
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      # These images are Node runtimes with no curl/wget on PATH, so a
+      # curl-based test fails regardless of the app's real state and pins the
+      # container to "unhealthy" forever. Probe with node itself.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:4000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
       interval: 30s
       timeout: 10s
       retries: 3
@@ -106,7 +127,12 @@ services:
       PONDER_SCHEMA: ponder_prod
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -x node || exit 1"]
+      # No pgrep in the image either. Assert PID 1 is still the node process.
+      test:
+        - CMD
+        - node
+        - -e
+        - "process.exit(require('fs').readFileSync('/proc/1/cmdline', 'utf8').includes('node') ? 0 : 1)"
       interval: 30s
       timeout: 10s
       retries: 3
@@ -137,7 +163,14 @@ services:
         condition: service_started
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      # These images are Node runtimes with no curl/wget on PATH, so a
+      # curl-based test fails regardless of the app's real state and pins the
+      # container to "unhealthy" forever. Probe with node itself.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
       interval: 30s
       timeout: 10s
       retries: 3
@@ -162,7 +195,14 @@ services:
       REDIS_URL: redis://:dashtec@redis-testnet:6379
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:42069/health"]
+      # These images are Node runtimes with no curl/wget on PATH, so a
+      # curl-based test fails regardless of the app's real state and pins the
+      # container to "unhealthy" forever. Probe with node itself.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:42069/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
       interval: 30s
       timeout: 10s
       retries: 3
@@ -195,7 +235,14 @@ services:
         condition: service_started
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      # These images are Node runtimes with no curl/wget on PATH, so a
+      # curl-based test fails regardless of the app's real state and pins the
+      # container to "unhealthy" forever. Probe with node itself.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:4000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
       interval: 30s
       timeout: 10s
       retries: 3
@@ -217,7 +264,12 @@ services:
       PONDER_SCHEMA: ponder_prod
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -x node || exit 1"]
+      # No pgrep in the image either. Assert PID 1 is still the node process.
+      test:
+        - CMD
+        - node
+        - -e
+        - "process.exit(require('fs').readFileSync('/proc/1/cmdline', 'utf8').includes('node') ? 0 : 1)"
       interval: 30s
       timeout: 10s
       retries: 3

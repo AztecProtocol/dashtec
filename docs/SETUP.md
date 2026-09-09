@@ -223,14 +223,24 @@ Recomputes epoch-level aggregate stats (total attestations, proposals) to repair
 | `batchSize` | number | `10` | Number of epochs to recompute per cycle. |
 | `epochsToRepair` | number | `50` | How many recent epochs to scan for missing aggregates. |
 
-#### `collectors.providerList` (optional)
+#### `collectors.providerList`
 
-Syncs provider metadata from an external staking app API.
+Syncs provider metadata — name, description, website, logo, email, discord —
+from the Aztec staking app into the `ProviderMetadata` table. Everything else
+about a provider (identifier, admin, take rate, attesters, stake) is indexed from
+L1 by Ponder; only these display fields come from the API, so leaving this unset
+gives you providers that render as bare identifiers with no names or logos.
+
+The collector disables itself when `apiUrl` is empty, and says so once at startup
+rather than erroring — easy to miss.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `apiUrl` | string | `""` | External staking app API URL to fetch provider data from. |
-| `pollIntervalMs` | number | `60000` | Polling interval (ms). |
+| `apiUrl` | string | — | Staking app API base. `https://api.stake.aztec.network/api` (mainnet), `https://api.testnet.stake.aztec.network/api` (testnet). The collector appends `/providers`. Note it is the `api.` host — `stake.aztec.network` itself is a SPA that returns `index.html` for every path, including `/api/providers`, so a wrong base fails as an HTML parse rather than a 404. |
+| `pollIntervalMs` | number | `600000` | Polling interval (ms). Metadata changes rarely; there is no reason to poll it hard. |
+
+Providers registered on L1 that never created a staking-app profile simply have
+no metadata row — as of writing, 77 of 104 mainnet providers have one.
 
 **Used by:** indexer-custom
 
