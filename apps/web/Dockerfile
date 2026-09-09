@@ -48,14 +48,33 @@ RUN if [ -f "./apps/web/.env.build.${NETWORK}" ]; then cp "./apps/web/.env.build
 # logger -> database (needs logger; prisma generated first) -> shared-types
 # (needs database) -> shared-utils -> contract-calls.
 RUN pnpm --filter @dashtec/logger build
-RUN pnpm --filter @dashtec/database db:generate
+# `prisma generate` only reads the schema — it never connects — but Prisma's
+# config still requires DATABASE_URL to resolve, so the build fails without it.
+# Supplied inline for this RUN only: it must not leak into the image, where the
+# real URL comes from compose at runtime. Until now this was satisfied by a
+# stale, gitignored packages/database/.env left over on the deploy host, so the
+# build silently depended on an artifact no fresh checkout would have.
+RUN DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder" pnpm --filter @dashtec/database db:generate
 RUN pnpm --filter @dashtec/database build
 RUN pnpm --filter @dashtec/shared-types build
 RUN pnpm --filter @dashtec/shared-utils build
 RUN pnpm --filter @dashtec/contract-calls build
 
-# Build web app with standalone output
-RUN pnpm --filter @dashtec/web build
+# Build web app with standalone output.
+#
+# `next build` collects page data, which evaluates getEnv() and therefore needs
+# every required variable to resolve. The non-secret ones come from
+# .env.build.<network> (copied to .env.production above). The three below are
+# secrets, so they are passed inline as throwaway placeholders rather than
+# written to a file: Next's standalone output traces .env* into the image, and a
+# stale apps/web/.env doing exactly that is how months-old secrets and a
+# superseded rollup address ended up baked into shipped images.
+#
+# These values are never used at runtime — compose supplies the real ones.
+RUN DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder" \
+    SESSION_PASSWORD="build-time-placeholder-not-used-at-runtime" \
+    ETHEREUM_RPC_URL="http://placeholder.invalid" \
+    pnpm --filter @dashtec/web build
 
 # Production runner - uses Next.js standalone output
 FROM base AS runner

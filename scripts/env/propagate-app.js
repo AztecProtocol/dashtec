@@ -63,6 +63,22 @@ const envMapBuild = {
   'NEXT_PUBLIC_TESTNET_DOMAIN': config.app.domains?.sepolia || 'testnet.dashtec.xyz',
   'NEXT_PUBLIC_NETWORK_TYPE': config.network.type,
   'CHAIN_NAME': config.network.type,
+
+  // `next build` collects page data, which runs getEnv() — so every required var
+  // in apps/web/src/config/env.ts must resolve at build time or the build fails
+  // with "Failed to collect page data". These are the non-secret ones: public
+  // URLs and on-chain contract addresses. They are safe to ship, which matters
+  // because Next's standalone output traces .env.production into the image.
+  // Secrets (DATABASE_URL, SESSION_PASSWORD, ETHEREUM_RPC_URL) are deliberately
+  // absent — the Dockerfile passes throwaway placeholders for those inline, and
+  // the real values arrive from compose at runtime.
+  'APP_URL': config.app.url,
+  'AZTEC_SCAN_URL': config.app.aztecScanUrl || '',
+  'NEXT_SENTINEL_URL': config.aztecNode.url,
+  'ROLLUP_CONTRACT_ADDRESS': config.contracts.rollupAddress,
+  'SLASHING_PROPOSER_CONTRACT_ADDRESS': config.contracts.slashingProposerAddress,
+  'GOVERNANCE_PROPOSER_CONTRACT_ADDRESS': config.contracts.governanceProposerAddress,
+  'STAKING_REGISTRY_CONTRACT_ADDRESS': config.contracts.stakingRegistryAddress,
 };
 
 const appsDir = join(ROOT_DIR, 'apps', 'web');

@@ -31,7 +31,13 @@ COPY . .
 # Build compiled packages in dependency order: logger -> database (needs logger;
 # prisma generated first) -> shared-types (needs database) -> shared-utils.
 RUN pnpm -r --filter ./packages/logger build
-RUN pnpm -r --filter ./packages/database db:generate
+# `prisma generate` only reads the schema — it never connects — but Prisma's
+# config still requires DATABASE_URL to resolve, so the build fails without it.
+# Supplied inline for this RUN only: it must not leak into the image, where the
+# real URL comes from compose at runtime. Until now this was satisfied by a
+# stale, gitignored packages/database/.env left over on the deploy host, so the
+# build silently depended on an artifact no fresh checkout would have.
+RUN DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder" pnpm -r --filter ./packages/database db:generate
 RUN pnpm -r --filter ./packages/database build
 RUN pnpm -r --filter ./packages/shared-types build
 RUN pnpm -r --filter ./packages/shared-utils build
