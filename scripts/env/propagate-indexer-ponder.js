@@ -27,7 +27,16 @@ const envMap = {
   'DATABASE_SCHEMA': config.ponder.databaseSchema,
   'PORT': config.ponder.port,
   'MAX_HEALTHCHECK_DURATION': config.ponder.maxHealthcheckDuration,
+  // Per-contract, because a rollup upgrade redeploys only the rollup and its
+  // slashing proposer; the rest keep their addresses and their history. Each
+  // falls back to the rollup's block when discovery has not supplied one.
   'START_BLOCK': config.ponder.startBlock,
+  'START_BLOCK_SLASHING_PROPOSER': config.ponder.startBlocks?.slashingProposer ?? config.ponder.startBlock,
+  'START_BLOCK_GSE': config.ponder.startBlocks?.gse ?? config.ponder.startBlock,
+  'START_BLOCK_REGISTRY': config.ponder.startBlocks?.registry ?? config.ponder.startBlock,
+  'START_BLOCK_GOVERNANCE': config.ponder.startBlocks?.governance ?? config.ponder.startBlock,
+  'START_BLOCK_GOVERNANCE_PROPOSER': config.ponder.startBlocks?.governanceProposer ?? config.ponder.startBlock,
+  'START_BLOCK_STAKING_REGISTRY': config.ponder.startBlocks?.stakingRegistry ?? config.ponder.startBlock,
   'REDIS_URL': config.ponder.redis?.url,
 
   '#network': 'Network',

@@ -26,6 +26,14 @@ const configSchema = z.object({
   STAKING_REGISTRY_CONTRACT_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
   REGISTRY_CONTRACT_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
   START_BLOCK: z.string().transform(Number).default('0'),
+  // Optional per-contract overrides. Contracts that survive a rollup upgrade
+  // must keep indexing from their own deployment, not the new rollup's.
+  START_BLOCK_SLASHING_PROPOSER: z.string().transform(Number).optional(),
+  START_BLOCK_GSE: z.string().transform(Number).optional(),
+  START_BLOCK_REGISTRY: z.string().transform(Number).optional(),
+  START_BLOCK_GOVERNANCE: z.string().transform(Number).optional(),
+  START_BLOCK_GOVERNANCE_PROPOSER: z.string().transform(Number).optional(),
+  START_BLOCK_STAKING_REGISTRY: z.string().transform(Number).optional(),
   NETWORK_TYPE: z.string(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),

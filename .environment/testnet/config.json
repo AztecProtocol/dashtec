@@ -68,7 +68,9 @@
   "ponder": {
     "port": 42069,
     "maxHealthcheckDuration": 240,
-    "startBlock": 0
+    "startBlock": 0,
+    "startBlocks": {},
+    "_comment": "startBlock and startBlocks are set by `pnpm env:discover testnet`. A rollup upgrade redeploys only the rollup and its slashing proposer; the GSE, registry, governance, governance proposer and staking registry keep their addresses, so each is indexed from its own deployment block. Indexing them all from the new rollup discards their earlier events."
   },
   "app": {
     "url": "https://testnet.dashtec.xyz",

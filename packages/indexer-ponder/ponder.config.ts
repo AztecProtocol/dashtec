@@ -15,6 +15,12 @@ import {
  * Ponder configuration for indexing Aztec event-based contracts
  */
 
+// startBlock is per-contract: a rollup upgrade redeploys the rollup and its
+// slashing proposer, while the GSE, registry, governance and staking registry
+// keep their addresses. Indexing the survivors from the new rollup's block
+// discards their earlier events — which is how every GSE-staked validator went
+// missing from the registry after V5. discover-contracts.js finds each
+// deployment block; the ?? fallback covers configs written before it did.
 export default createConfig({
   database: {
     kind: 'postgres',
@@ -49,7 +55,7 @@ export default createConfig({
       chain: config.NETWORK_TYPE,
       address: config.GOVERNANCE_PROPOSER_CONTRACT_ADDRESS as `0x${string}`,
       abi: EmpireBaseABI,
-      startBlock: config.START_BLOCK,
+      startBlock: config.START_BLOCK_GOVERNANCE_PROPOSER ?? config.START_BLOCK,
     },
 
     /**
@@ -63,7 +69,7 @@ export default createConfig({
       chain: config.NETWORK_TYPE,
       address: config.SLASHING_PROPOSER_CONTRACT_ADDRESS as `0x${string}`,
       abi: TallySlashingProposerABI,
-      startBlock: config.START_BLOCK,
+      startBlock: config.START_BLOCK_SLASHING_PROPOSER ?? config.START_BLOCK,
     },
 
     /**
@@ -74,7 +80,7 @@ export default createConfig({
       chain: config.NETWORK_TYPE,
       address: config.GOVERNANCE_CONTRACT_ADDRESS as `0x${string}`,
       abi: GovernorContractABI,
-      startBlock: config.START_BLOCK,
+      startBlock: config.START_BLOCK_GOVERNANCE ?? config.START_BLOCK,
     },
 
     /**
@@ -85,7 +91,7 @@ export default createConfig({
       chain: config.NETWORK_TYPE,
       address: config.GSE_CONTRACT_ADDRESS as `0x${string}`,
       abi: GseABI,
-      startBlock: config.START_BLOCK,
+      startBlock: config.START_BLOCK_GSE ?? config.START_BLOCK,
     },
 
     /**
@@ -98,7 +104,7 @@ export default createConfig({
       chain: config.NETWORK_TYPE,
       address: config.STAKING_REGISTRY_CONTRACT_ADDRESS as `0x${string}`,
       abi: StakingRegistryABI,
-      startBlock: config.START_BLOCK,
+      startBlock: config.START_BLOCK_STAKING_REGISTRY ?? config.START_BLOCK,
     },
 
     /**
@@ -109,7 +115,7 @@ export default createConfig({
       chain: config.NETWORK_TYPE,
       address: config.REGISTRY_CONTRACT_ADDRESS as `0x${string}`,
       abi: RegistryABI,
-      startBlock: config.START_BLOCK,
+      startBlock: config.START_BLOCK_REGISTRY ?? config.START_BLOCK,
     },
   },
 });

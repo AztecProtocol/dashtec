@@ -246,15 +246,18 @@ export const gseDeposit = onchainTable('gse_deposit', (t) => ({
   instance_address: t.hex().notNull(),
   attester_address: t.hex().notNull(),
   withdrawer_address: t.hex().notNull(),
-  public_key_g1_x: t.text().notNull(),
-  public_key_g1_y: t.text().notNull(),
-  public_key_g2_x0: t.text().notNull(),
-  public_key_g2_x1: t.text().notNull(),
-  public_key_g2_y0: t.text().notNull(),
-  public_key_g2_y1: t.text().notNull(),
-  proof_of_possession_x: t.text().notNull(),
-  proof_of_possession_y: t.text().notNull(),
+  // GSE.Deposit carries no BLS material — those columns were modelled on an event
+  // signature the contract never emitted. The keys live on the Rollup's own
+  // Deposit event (see the `deposit` table) for validators who staked directly.
+  //
+  // Derived, not emitted: the GSE records moveWithLatestRollup attesters against
+  // BONUS_INSTANCE_ADDRESS, so instance == bonus is exactly that flag.
   move_with_latest_rollup: t.integer().notNull(),
+  // The rollup this deposit counts towards. Equal to instance_address for a
+  // direct-instance deposit; for a bonus deposit it is resolved downstream to
+  // whichever rollup was canonical at this block, because the bonus sentinel is
+  // not a rollup address and cannot be filtered on.
+  resolved_rollup_address: t.hex(),
   block_number: t.text().notNull(),
   transaction_hash: t.hex().notNull(),
   log_index: t.text().notNull(),

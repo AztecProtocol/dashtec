@@ -236,20 +236,62 @@ try {
   process.exit(1);
 }
 
+// A rollup upgrade redeploys the rollup and its slashing proposer, but NOT the
+// GSE, registry, governance, governance proposer or staking registry — those
+// keep their addresses across versions. Indexing every contract from the new
+// rollup's deploy block therefore throws away everything the older contracts
+// emitted beforehand. On the V4->V5 upgrade that silently discarded ~1.64M
+// blocks of GSE deposits, which is what ValidatorRollup is built from, so the
+// validator registry only ever saw the handful who deposited post-upgrade.
+//
+// Give every contract its own start block, found the same way as the rollup's.
+const CONTRACT_START_BLOCK_KEYS = {
+  rollup: 'rollupAddress',
+  slashingProposer: 'slashingProposerAddress',
+  gse: 'gseAddress',
+  registry: 'registryAddress',
+  governance: 'governanceAddress',
+  governanceProposer: 'governanceProposerAddress',
+  stakingRegistry: 'stakingRegistryAddress',
+};
+
+const startBlocks = { rollup: startBlock };
+try {
+  for (const [key, addressKey] of Object.entries(CONTRACT_START_BLOCK_KEYS)) {
+    if (key === 'rollup') continue;
+    const address = (discovered[addressKey] ?? config.contracts[addressKey] ?? '').toLowerCase();
+    if (!/^0x[0-9a-f]{40}$/.test(address) || address === ZERO) {
+      console.log(`  ! ${key.padEnd(28)} no address configured — skipping`);
+      continue;
+    }
+    startBlocks[key] = address === discovered.rollupAddress
+      ? startBlock
+      : await findDeploymentBlock(address);
+  }
+} catch (error) {
+  console.error(`❌ Deployment-block search failed: ${error.message}`);
+  process.exit(1);
+}
+
 // Aztec V5 deleted SlashFactory.sol, so drop the key from configs written by an
 // earlier dashtec rather than leaving a dead address behind.
 delete config.contracts.slashFactoryAddress;
 
 const before = { ...config.contracts };
 config.contracts = { ...config.contracts, ...discovered };
-config.ponder = { ...config.ponder, startBlock };
+// `startBlock` stays the rollup's, as the default for anything without its own.
+config.ponder = { ...config.ponder, startBlock, startBlocks };
 
 for (const [key, value] of Object.entries(discovered)) {
   const previous = String(before[key] ?? '').toLowerCase();
   const marker = previous === value ? ' ' : '~';
   console.log(`  ${marker} ${key.padEnd(28)} ${value}`);
 }
-console.log(`  ${config.ponder.startBlock === before.startBlock ? ' ' : '~'} ${'ponder.startBlock'.padEnd(28)} ${startBlock}`);
+console.log('');
+for (const [key, value] of Object.entries(startBlocks)) {
+  const marker = value === startBlock ? ' ' : '~';
+  console.log(`  ${marker} ${`startBlock.${key}`.padEnd(28)} ${value}`);
+}
 console.log(`\n  (slasher ${slasher}, not stored — only used to reach the proposer)`);
 console.log(`  (stakingRegistryAddress left as ${config.contracts.stakingRegistryAddress})`);
 

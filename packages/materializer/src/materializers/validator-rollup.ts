@@ -32,7 +32,13 @@ export class ValidatorRollupMaterializer extends BaseMaterializer {
       .select({
         id: gseDeposit.id,
         attester_address: gseDeposit.attester_address,
-        rollup_address: gseDeposit.instance_address,
+        // NOT instance_address. For a moveWithLatestRollup deposit that column
+        // holds the GSE's bonus sentinel, which is not a rollup and matches no
+        // rollup filter — writing it here populates ValidatorRollup while leaving
+        // the validator registry empty. The handler resolves it to the rollup
+        // that was canonical at the deposit block; older rows predating that
+        // column fall back to the instance.
+        rollup_address: sql<string>`COALESCE(${gseDeposit.resolved_rollup_address}, ${gseDeposit.instance_address})`.as('rollup_address'),
         deposit_type: sql<string>`'gse'`.as('deposit_type'),
         block_number: gseDeposit.block_number,
         log_index: gseDeposit.log_index,
