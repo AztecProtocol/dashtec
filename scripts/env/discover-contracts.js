@@ -63,6 +63,36 @@ if (l1Urls.length === 0) {
 }
 const l1Url = l1Urls[0];
 
+/**
+ * An L1 call, tried against each configured endpoint in turn.
+ *
+ * `rpc()` already retries a single endpoint through throttling, but that does not
+ * help when an endpoint's budget is simply exhausted — Sepolia's public Tenderly
+ * gateway answers 429 to even a single eth_blockNumber under load. The fallbacks
+ * are usually pruning nodes, which is fine for `latest` reads: pruning only
+ * affects historical state, and the deployment-block search below is the one
+ * caller that needs history, so it opts out.
+ */
+async function l1Rpc(method, params, { historical = false } = {}) {
+  const urls = historical ? [l1Url] : l1Urls;
+  let lastError;
+  for (const url of urls) {
+    try {
+      return await rpc(url, method, params);
+    } catch (error) {
+      lastError = error;
+      if (urls.length > 1) {
+        console.log(`  ! ${method} failed on ${redact(url)} (${error.message}) — trying the next endpoint`);
+      }
+    }
+  }
+  throw lastError;
+}
+
+// Snapshot the committed addresses before anything overwrites them; the
+// start-block cache is only valid while an address is unchanged.
+const before = { ...(config.contracts ?? {}) };
+
 let nextId = 1;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -168,9 +198,10 @@ function requireAddress(value, label) {
 async function findDeploymentBlock(address) {
   const PROBE_SPACING_MS = 150;
 
-  const head = Number(await rpc(l1Url, 'eth_blockNumber', []));
+  const head = Number(await l1Rpc('eth_blockNumber', []));
   const hasCode = async (block) => {
-    const code = await rpc(l1Url, 'eth_getCode', [address, `0x${block.toString(16)}`]);
+    // Historical state: only the primary endpoint can be trusted to retain it.
+    const code = await l1Rpc('eth_getCode', [address, `0x${block.toString(16)}`], { historical: true });
     await sleep(PROBE_SPACING_MS);
     return typeof code === 'string' && code !== '0x' && code !== '0x0';
   };
@@ -222,17 +253,29 @@ discovered.gseAddress = requireAddress(addresses.gseAddress, 'gseAddress');
 // startBlock from the rollup's own deployment — both L1 reads.
 let slasher;
 let startBlock;
+let rollupStartWasCached = false;
 try {
   slasher = addressFromWord(
-    await rpc(l1Url, 'eth_call', [{ to: discovered.rollupAddress, data: SELECTOR_GET_SLASHER }, 'latest']),
+    await l1Rpc('eth_call', [{ to: discovered.rollupAddress, data: SELECTOR_GET_SLASHER }, 'latest']),
   );
   discovered.slashingProposerAddress = requireAddress(
-    addressFromWord(await rpc(l1Url, 'eth_call', [{ to: slasher, data: SELECTOR_PROPOSER }, 'latest'])),
+    addressFromWord(await l1Rpc('eth_call', [{ to: slasher, data: SELECTOR_PROPOSER }, 'latest'])),
     'slashingProposerAddress',
   );
-  startBlock = await findDeploymentBlock(discovered.rollupAddress);
+  // Same cache rule as the other contracts: only search when the rollup address
+  // differs from the committed one, which is exactly an upgrade.
+  const cachedRollupStart = config.ponder?.startBlock;
+  if (
+    Number.isInteger(cachedRollupStart) && cachedRollupStart > 0 &&
+    String(before.rollupAddress ?? '').toLowerCase() === discovered.rollupAddress
+  ) {
+    startBlock = cachedRollupStart;
+    rollupStartWasCached = true;
+  } else {
+    startBlock = await findDeploymentBlock(discovered.rollupAddress);
+  }
 } catch (error) {
-  console.error(`❌ L1 lookup against ${redact(l1Url)} failed: ${error.message}`);
+  console.error(`❌ L1 lookup failed across all ${l1Urls.length} configured endpoint(s): ${error.message}`);
   process.exit(1);
 }
 
@@ -255,21 +298,53 @@ const CONTRACT_START_BLOCK_KEYS = {
   stakingRegistry: 'stakingRegistryAddress',
 };
 
+// Searching for a deployment block costs ~25 sequential eth_getCode calls. Doing
+// that for every contract on every deploy is ~175 calls, which is enough to
+// exhaust a public endpoint's rate limit outright — retries do not help once the
+// budget is gone, and the deploy fails.
+//
+// A contract's deployment block cannot change, so the committed config.json
+// carries the answer and it is only recomputed when that contract's address
+// actually changes — i.e. on an upgrade, for the one or two contracts that were
+// redeployed. A steady-state deploy spends no calls here at all.
+const cachedStartBlocks = config.ponder?.startBlocks ?? {};
 const startBlocks = { rollup: startBlock };
+const searched = new Set();
+
 try {
   for (const [key, addressKey] of Object.entries(CONTRACT_START_BLOCK_KEYS)) {
     if (key === 'rollup') continue;
+
     const address = (discovered[addressKey] ?? config.contracts[addressKey] ?? '').toLowerCase();
     if (!/^0x[0-9a-f]{40}$/.test(address) || address === ZERO) {
       console.log(`  ! ${key.padEnd(28)} no address configured — skipping`);
       continue;
     }
-    startBlocks[key] = address === discovered.rollupAddress
-      ? startBlock
-      : await findDeploymentBlock(address);
+
+    if (address === discovered.rollupAddress) {
+      startBlocks[key] = startBlock;
+      continue;
+    }
+
+    // Reuse only when the cached block belongs to the address we just discovered;
+    // otherwise the contract was redeployed and the old block is meaningless.
+    const previousAddress = String(before[addressKey] ?? '').toLowerCase();
+    const cached = cachedStartBlocks[key];
+    if (Number.isInteger(cached) && cached > 0 && previousAddress === address) {
+      startBlocks[key] = cached;
+      continue;
+    }
+
+    startBlocks[key] = await findDeploymentBlock(address);
+    searched.add(key);
   }
 } catch (error) {
   console.error(`❌ Deployment-block search failed: ${error.message}`);
+  if (searched.size === 0) {
+    console.error('   No cached start blocks were usable, so every contract needed a search.');
+    console.error('   Commit the discovered ponder.startBlocks to .environment/<network>/config.json');
+    console.error('   so routine deploys stop re-deriving them.');
+  }
   process.exit(1);
 }
 
@@ -277,7 +352,6 @@ try {
 // earlier dashtec rather than leaving a dead address behind.
 delete config.contracts.slashFactoryAddress;
 
-const before = { ...config.contracts };
 config.contracts = { ...config.contracts, ...discovered };
 // `startBlock` stays the rollup's, as the default for anything without its own.
 config.ponder = { ...config.ponder, startBlock, startBlocks };
@@ -289,8 +363,16 @@ for (const [key, value] of Object.entries(discovered)) {
 }
 console.log('');
 for (const [key, value] of Object.entries(startBlocks)) {
-  const marker = value === startBlock ? ' ' : '~';
-  console.log(`  ${marker} ${`startBlock.${key}`.padEnd(28)} ${value}`);
+  const how = searched.has(key)
+    ? 'searched'
+    : key === 'rollup'
+      ? (rollupStartWasCached ? 'cached' : 'searched')
+      : 'cached';
+  console.log(`    ${`startBlock.${key}`.padEnd(28)} ${String(value).padEnd(10)} (${how})`);
+}
+if (searched.size > 0 || !rollupStartWasCached) {
+  const n = searched.size + (rollupStartWasCached ? 0 : 1);
+  console.log(`\n  (${n} contract(s) re-derived — expected only when an address changes)`);
 }
 console.log(`\n  (slasher ${slasher}, not stored — only used to reach the proposer)`);
 console.log(`  (stakingRegistryAddress left as ${config.contracts.stakingRegistryAddress})`);

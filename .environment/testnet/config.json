@@ -26,13 +26,14 @@
     "memLimit": "6g"
   },
   "contracts": {
-    "rollupAddress": "0x0000000000000000000000000000000000000000",
-    "governanceAddress": "0x0000000000000000000000000000000000000000",
-    "governanceProposerAddress": "0x0000000000000000000000000000000000000000",
+    "rollupAddress": "0xd73a91bdcf6891c7642f3e460036e1ef2cc23178",
+    "governanceAddress": "0xcaf7447721447b22cd0076ac7c63877c3afd329f",
+    "governanceProposerAddress": "0x01c7d4ca153748d2377968fef22894cb162e9480",
     "slashingProposerAddress": "0x0000000000000000000000000000000000000000",
-    "gseAddress": "0x0000000000000000000000000000000000000000",
+    "gseAddress": "0xb6a38a51a6c1de9012f9d8ea9745ef957212eaac",
     "stakingRegistryAddress": "0xC6EcC1832c8BF6a41c927BEb4E9ec610FBeDd1C2",
-    "registryAddress": "0x0000000000000000000000000000000000000000"
+    "registryAddress": "0xa0bfb1b494fb49041e5c6e8c2c1be09cd171c6ba",
+    "_comment": "Verified against the Aztec node on every deploy by `pnpm env:discover testnet` and rewritten if the chain disagrees. Committed rather than zeroed so the deploy can skip the ~25-call deployment-block search per contract. slashingProposerAddress is derived on-chain each run (Rollup.getSlasher -> Slasher.PROPOSER). stakingRegistryAddress is not part of the Aztec core deployment and is not discovered."
   },
   "collectors": {
     "validatorStats": {
@@ -68,9 +69,17 @@
   "ponder": {
     "port": 42069,
     "maxHealthcheckDuration": 240,
-    "startBlock": 0,
-    "startBlocks": {},
-    "_comment": "startBlock and startBlocks are set by `pnpm env:discover testnet`. A rollup upgrade redeploys only the rollup and its slashing proposer; the GSE, registry, governance, governance proposer and staking registry keep their addresses, so each is indexed from its own deployment block. Indexing them all from the new rollup discards their earlier events."
+    "startBlock": 11250166,
+    "startBlocks": {
+      "governance": 9500000,
+      "governanceProposer": 9500000,
+      "gse": 9500000,
+      "registry": 9500000,
+      "rollup": 11250166,
+      "slashingProposer": 11250166,
+      "stakingRegistry": 9500000
+    },
+    "_comment": "startBlock/startBlocks are verified by `pnpm env:discover testnet` and only re-derived when a contract address changes. Survivor blocks are the historical 9500000 floor rather than measured deployments \u2014 correct but wasteful; see contracts._comment."
   },
   "app": {
     "url": "https://testnet.dashtec.xyz",
