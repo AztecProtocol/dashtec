@@ -67,4 +67,10 @@ locals {
   # CloudFront origin: an A record pointing at the Hetzner server's IPv4.
   # CloudFront requires a hostname (not a bare IP) for a custom origin.
   origin_domain = var.origin_domain
+
+  # www is an alias on the mainnet distribution that a CloudFront Function
+  # redirects to the apex. Both operands are plain variables, so this stays known
+  # at plan time and is safe to drive count/for_each with.
+  www_domain  = var.www_domain
+  www_enabled = var.use_custom_domain && var.www_domain != ""
 }

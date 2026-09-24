@@ -40,3 +40,33 @@ resource "aws_route53_record" "web_ipv6" {
     evaluate_target_health = false
   }
 }
+
+# www -> the mainnet distribution, which 301s it to the apex (see the CloudFront
+# Function in cloudfront.tf). Separate from aws_route53_record.web because that
+# resource is keyed on the distributions map, and www is an extra hostname on an
+# existing distribution rather than a distribution of its own.
+resource "aws_route53_record" "www" {
+  count   = local.www_enabled ? 1 : 0
+  zone_id = var.route53_zone_id
+  name    = local.www_domain
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.web["mainnet"].domain_name
+    zone_id                = aws_cloudfront_distribution.web["mainnet"].hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "www_ipv6" {
+  count   = local.www_enabled ? 1 : 0
+  zone_id = var.route53_zone_id
+  name    = local.www_domain
+  type    = "AAAA"
+
+  alias {
+    name                   = aws_cloudfront_distribution.web["mainnet"].domain_name
+    zone_id                = aws_cloudfront_distribution.web["mainnet"].hosted_zone_id
+    evaluate_target_health = false
+  }
+}

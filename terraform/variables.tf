@@ -36,6 +36,12 @@ variable "testnet_domain" {
   default     = "testnet.dashtec.xyz"
 }
 
+variable "www_domain" {
+  description = "Hostname that 301-redirects to mainnet_domain, served by the mainnet CloudFront distribution via a CloudFront Function. Set to \"\" to disable — appropriate when mainnet_domain is itself a subdomain, where a www.* prefix makes no sense. Only takes effect when use_custom_domain = true."
+  type        = string
+  default     = "www.dashtec.xyz"
+}
+
 variable "origin_domain" {
   description = "Hostname that resolves to the Hetzner server's IPv4 and is used as the CloudFront origin. Not user-facing."
   type        = string

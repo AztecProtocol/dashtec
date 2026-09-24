@@ -20,6 +20,13 @@ route53_zone_id = ""
 mainnet_domain = "dashtec.xyz"
 testnet_domain = "testnet.dashtec.xyz"
 
+# Redirects (301) to mainnet_domain via a CloudFront Function on the mainnet
+# distribution; it is an alias there, not a distribution of its own. Redirecting
+# rather than serving matters — APP_URL and the Discord/X OAuth redirect URIs are
+# apex-only, so a session begun on www would fail its callback.
+# Set to "" to disable (e.g. when mainnet_domain is already a subdomain).
+www_domain = "www.dashtec.xyz"
+
 # Internal CloudFront origin hostname -> Hetzner IPv4 (used only when use_custom_domain = true)
 origin_domain = "origin.dashtec.xyz"
 
