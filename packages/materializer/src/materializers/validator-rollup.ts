@@ -98,4 +98,31 @@ export class ValidatorRollupMaterializer extends BaseMaterializer {
   protected async countRemaining() {
     return prisma.validatorRollup.count();
   }
+
+  /**
+   * The migration backfill derives rows from CanonicalRollupUpdated, which a
+   * different materializer populates on its own cursor. Running it only from
+   * materializeBatch meant that once the deposit backlog drained it never ran
+   * again — so after the V4->V5 upgrade no validator was ever migrated forward
+   * onto the V5 rollup, and the registry showed a few hundred instead of
+   * thousands. Both statements are idempotent (ON CONFLICT DO NOTHING, plus a
+   * status recompute), so re-running is safe.
+   *
+   * Throttled because poll() runs every 5s and these are whole-table queries;
+   * canonical rollup changes are rare, so a minute of latency costs nothing.
+   */
+  private lastIdleSyncMs = 0;
+
+  protected async onIdle() {
+    const IDLE_SYNC_INTERVAL_MS = 60_000;
+    const now = Date.now();
+    if (now - this.lastIdleSyncMs < IDLE_SYNC_INTERVAL_MS) return;
+    this.lastIdleSyncMs = now;
+
+    const inserted = await backfillMigratedValidators();
+    await refreshMigrationStatus();
+    if (inserted > 0) {
+      this.logger.info(`Idle sync backfilled ${inserted} migration rows`);
+    }
+  }
 }

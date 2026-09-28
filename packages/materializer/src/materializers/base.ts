@@ -35,7 +35,13 @@ export abstract class BaseMaterializer {
     this.lastCursor = cursor;
     const rows = await this.fetchBatch(cursor);
 
-    if (rows.length === 0) return 0;
+    if (rows.length === 0) {
+      // A materializer whose output depends on ANOTHER materializer's tables
+      // cannot treat its own event stream going quiet as "work finished" — its
+      // inputs may still be arriving on a different cursor. Give it a hook.
+      await this.onIdle();
+      return 0;
+    }
 
     await this.materializeBatch(rows);
 
@@ -119,4 +125,10 @@ export abstract class BaseMaterializer {
 
   /** Count remaining rows in Prisma after reorg cleanup. */
   protected abstract countRemaining(): Promise<number>;
+
+  /**
+   * Optional work that must happen even with no new events of this
+   * materializer's own type. Default is a no-op.
+   */
+  protected async onIdle(): Promise<void> {}
 }
