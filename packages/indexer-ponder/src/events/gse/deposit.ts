@@ -64,26 +64,40 @@ ponder.on('GSEContract:Deposit', async ({ event, context }) => {
     }
   }
 
-  // Fetch attester view for derived columns
+  // Derived columns, read from the rollup.
   let attesterStatus: string | null = null;
   let effectiveBalance: string | null = null;
   let validatorHexIndex: string | null = null;
 
-  try {
-    const attesterView = await context.client.readContract({
-      address: config.ROLLUP_CONTRACT_ADDRESS as Address,
-      abi: RollupABI,
-      functionName: 'getAttesterView',
-      args: [attesterAddress as Address],
-    }) as any;
+  // The GSE outlives individual rollups, so it is indexed from its own
+  // deployment — currently ~1.64M blocks before the configured rollup existed.
+  // Ponder reads contracts at the event's block, so attempting getAttesterView on
+  // those early deposits hits an address with no code: viem returns "0x", raises
+  // ContractFunctionZeroDataError, and Ponder retries it eight times with
+  // exponential backoff. That stalls the backfill rather than failing it.
+  //
+  // Nothing is lost by skipping. These are current-state columns hung off a
+  // historical event, and ValidatorListCollector already maintains status and
+  // effective balance for every validator from live chain state.
+  const rollupExistsAtThisBlock = event.block.number >= BigInt(config.START_BLOCK);
 
-    if (attesterView) {
-      attesterStatus = mapStatusToString(Number(attesterView.status));
-      effectiveBalance = attesterView.effectiveBalance.toString();
-      validatorHexIndex = getValidatorHexIndex(attesterAddress);
+  if (rollupExistsAtThisBlock) {
+    try {
+      const attesterView = await context.client.readContract({
+        address: config.ROLLUP_CONTRACT_ADDRESS as Address,
+        abi: RollupABI,
+        functionName: 'getAttesterView',
+        args: [attesterAddress as Address],
+      }) as any;
+
+      if (attesterView) {
+        attesterStatus = mapStatusToString(Number(attesterView.status));
+        effectiveBalance = attesterView.effectiveBalance.toString();
+        validatorHexIndex = getValidatorHexIndex(attesterAddress);
+      }
+    } catch (error) {
+      logger.warn(`Failed to fetch attester view for ${attesterAddress}`, { error });
     }
-  } catch (error) {
-    logger.warn(`Failed to fetch attester view for ${attesterAddress}`, { error });
   }
 
   // Insert into Ponder database with derived columns
