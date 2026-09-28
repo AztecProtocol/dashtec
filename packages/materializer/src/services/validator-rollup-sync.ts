@@ -29,7 +29,23 @@ export async function backfillMigratedValidators(): Promise<number> {
         cu.instance_address AS rollup_address,
         cu.block_number,
         cu.transaction_hash,
-        ROW_NUMBER() OVER (PARTITION BY cu.transaction_hash ORDER BY vr_deposit.address) + 100000 AS synthetic_log_index
+        -- Synthetic, because these rows describe an implied migration rather than a
+        -- real log. ValidatorRollup is unique on (transaction_hash, log_index) as
+        -- well as (address, rollup_address), and the ON CONFLICT below can only
+        -- name one of them. Numbering from a fixed 100000 base meant a second run
+        -- re-issued indices the first run had already used for other addresses, so
+        -- the whole INSERT aborted on constraint 23505 and nothing was written —
+        -- silently, since the poll loop logs and continues. Start above whatever
+        -- this canonical update already has so new rows can never collide.
+        ROW_NUMBER() OVER (PARTITION BY cu.transaction_hash ORDER BY vr_deposit.address)
+          + GREATEST(
+              100000,
+              COALESCE((
+                SELECT MAX(existing.log_index)
+                FROM "ValidatorRollup" existing
+                WHERE existing.transaction_hash = cu.transaction_hash
+              ), 100000) + 1
+            ) AS synthetic_log_index
       FROM "ValidatorRollup" vr_deposit
       JOIN "CanonicalRollupUpdated" cu
         ON cu.block_number::bigint > vr_deposit.block_number::bigint
@@ -46,7 +62,7 @@ export async function backfillMigratedValidators(): Promise<number> {
           AND LOWER(wi.rollup_address) = LOWER(vr_deposit.rollup_address)
       )
     ) sub
-    ON CONFLICT (address, rollup_address) DO NOTHING
+    ON CONFLICT DO NOTHING
   `;
 
   if (result > 0) {
