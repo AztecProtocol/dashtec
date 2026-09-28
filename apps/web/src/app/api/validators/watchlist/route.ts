@@ -3,6 +3,8 @@ import prisma, { combineSql } from '@/lib/prisma';
 import { Prisma } from '@dashtec/database';
 import { logError } from '@/services/error/errorLogger';
 import { createBenchmark } from '@/services/benchmark';
+import { parseRollupParam } from '@/lib/rollupParam';
+import { getActiveRollupAddress } from '@/services/rollupRegistry';
 import { PaginatedValidatorsResponse } from '@/types/api';
 import {
   createValidatorAggregatesCTE,
@@ -38,11 +40,15 @@ export async function POST(request: NextRequest) {
     const lowerAddresses = addresses.map((addr: string) => addr.toLowerCase());
     const epochFilter = Prisma.sql``;
 
+    const rollupAddresses = await parseRollupParam(new URL(request.url).searchParams);
+    const activeRollup = await getActiveRollupAddress();
+    const isActiveRollup = rollupAddresses.length === 1 && rollupAddresses[0] === activeRollup;
+
     // Multi-stage CTE query for maximum performance with global ranks
     benchmark.start('queryExecution');
     const result = await prisma.$queryRaw<any[]>`
       WITH
-      ${createValidatorAggregatesCTE({ epochFilter })},
+      ${createValidatorAggregatesCTE({ epochFilter, rollupAddresses, isActiveRollup })},
       ${createMaxValuesCTE()},
       ${createValidatorScoresCTE()},
       ${createFinalScoresCTE()},
@@ -64,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     const performanceHistory = validatorAddresses.length > 0
       ? await prisma.$queryRaw<PerformanceHistoryRow[]>(
-        createPerformanceHistoryQuery(validatorAddresses, { limit: 10 })
+        createPerformanceHistoryQuery(validatorAddresses, { limit: 10, rollupAddresses })
       )
       : [];
 
