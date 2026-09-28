@@ -29,7 +29,7 @@
     "rollupAddress": "0xd73a91bdcf6891c7642f3e460036e1ef2cc23178",
     "governanceAddress": "0xcaf7447721447b22cd0076ac7c63877c3afd329f",
     "governanceProposerAddress": "0x01c7d4ca153748d2377968fef22894cb162e9480",
-    "slashingProposerAddress": "0x0000000000000000000000000000000000000000",
+    "slashingProposerAddress": "0x504331248eb1359c247a0e6895fffea70ecdb9a8",
     "gseAddress": "0xb6a38a51a6c1de9012f9d8ea9745ef957212eaac",
     "stakingRegistryAddress": "0xC6EcC1832c8BF6a41c927BEb4E9ec610FBeDd1C2",
     "registryAddress": "0xa0bfb1b494fb49041e5c6e8c2c1be09cd171c6ba",

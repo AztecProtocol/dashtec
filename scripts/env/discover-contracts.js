@@ -262,6 +262,25 @@ try {
     addressFromWord(await l1Rpc('eth_call', [{ to: slasher, data: SELECTOR_PROPOSER }, 'latest'])),
     'slashingProposerAddress',
   );
+} catch (error) {
+  // This is the only value that needs L1 on a steady-state deploy, and losing a
+  // whole deploy to a rate-limited public endpoint is a worse failure than
+  // reusing the address we already know. Fall back to the committed value and
+  // say so loudly; the next successful deploy re-verifies it.
+  const committed = String(before.slashingProposerAddress ?? '').toLowerCase();
+  if (/^0x[0-9a-f]{40}$/.test(committed) && committed !== ZERO) {
+    console.warn(`  ⚠ Could not read the slashing proposer from L1 (${error.message}).`);
+    console.warn(`    Falling back to the committed address ${committed}.`);
+    console.warn('    If governance has replaced the slasher since, this will index the old');
+    console.warn('    proposer until a deploy reaches L1 successfully.');
+    discovered.slashingProposerAddress = committed;
+  } else {
+    console.error(`❌ L1 lookup failed and no committed slashing proposer to fall back on: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+try {
   // Same cache rule as the other contracts: only search when the rollup address
   // differs from the committed one, which is exactly an upgrade.
   const cachedRollupStart = config.ponder?.startBlock;
@@ -322,6 +341,19 @@ try {
     }
 
     if (address === discovered.rollupAddress) {
+      startBlocks[key] = startBlock;
+      continue;
+    }
+
+    // The slashing proposer is deployed alongside the rollup — measured on
+    // mainnet, both are at block 25428902 — so its block is the rollup's and
+    // never needs searching. Its address is derived on-chain rather than
+    // committed, so it could never satisfy the address-match cache rule; that
+    // one permanent cache miss was enough to trigger a ~25-call search on every
+    // single deploy and exhaust a rate-limited endpoint. If a replacement
+    // proposer is ever installed mid-version it will simply be indexed from
+    // slightly before it existed, which is harmless.
+    if (key === 'slashingProposer') {
       startBlocks[key] = startBlock;
       continue;
     }
