@@ -31,3 +31,11 @@
   ansible.builtin.shell: |
     cd /opt/alloy
     docker compose up -d --remove-orphans
+
+# Handlers normally run at end of play — hours later if aztec_node's
+# ready-wait runs long, and never if a later role fails, which would leave
+# a re-rendered config silently unapplied (the template task won't
+# re-notify on the next run). Flush now so a config change restarts Alloy
+# before the long-running roles.
+- name: Apply pending alloy restarts now
+  ansible.builtin.meta: flush_handlers

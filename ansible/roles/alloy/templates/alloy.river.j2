@@ -35,8 +35,8 @@ prometheus.scrape "host" {
 // indexers publish on 42069/42070 (compose port map in /opt/dashtec).
 prometheus.scrape "ponder" {
   targets = [
-    { __address__ = "127.0.0.1:42069", job = "ponder", network = "mainnet" },
-    { __address__ = "127.0.0.1:42070", job = "ponder", network = "testnet" },
+    { __address__ = "{{ ponder_mainnet_metrics_addr }}", job = "ponder", network = "mainnet" },
+    { __address__ = "{{ ponder_testnet_metrics_addr }}", job = "ponder", network = "testnet" },
   ]
   metrics_path    = "/metrics"
   forward_to      = [prometheus.remote_write.obs.receiver]
