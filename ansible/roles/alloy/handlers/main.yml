@@ -1,0 +1,4 @@
+---
+- name: restart alloy
+  ansible.builtin.command: docker restart alloy
+  failed_when: false

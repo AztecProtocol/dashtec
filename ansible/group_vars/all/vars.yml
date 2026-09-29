@@ -44,3 +44,10 @@ discord_client_id: "{{ lookup('env', 'DISCORD_CLIENT_ID') }}"
 discord_client_secret: "{{ lookup('env', 'DISCORD_CLIENT_SECRET') }}"
 x_client_id: "{{ lookup('env', 'X_CLIENT_ID') }}"
 x_client_secret: "{{ lookup('env', 'X_CLIENT_SECRET') }}"
+
+# --- monitoring (alloy role) ---
+alloy_image: "grafana/alloy:v1.16.0"
+node_exporter_image: "prom/node-exporter:v1.9.1"
+node_exporter_listen: "127.0.0.1:9100"
+observability_metrics_url: "http://aztec-observability-fsn1:9090/api/v1/write"
+observability_logs_url: "http://aztec-observability-fsn1:3100/loki/api/v1/push"

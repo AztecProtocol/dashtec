@@ -1,0 +1,63 @@
+logging {
+  level  = "info"
+  format = "json"
+}
+
+prometheus.remote_write "obs" {
+  external_labels = {
+    cluster = "dashtec",
+    host    = "{{ inventory_hostname }}",
+  }
+  endpoint {
+    url = "{{ observability_metrics_url }}"
+  }
+}
+
+loki.write "obs" {
+  external_labels = {
+    cluster = "dashtec",
+    host    = "{{ inventory_hostname }}",
+  }
+  endpoint {
+    url = "{{ observability_logs_url }}"
+  }
+}
+
+prometheus.scrape "host" {
+  targets = [
+    { __address__ = "{{ node_exporter_listen }}", job = "node_exporter" },
+  ]
+  forward_to      = [prometheus.remote_write.obs.receiver]
+  scrape_interval = "60s"
+}
+
+// Ponder ships /metrics natively on its HTTP port. Mainnet and testnet
+// indexers publish on 42069/42070 (compose port map in /opt/dashtec).
+prometheus.scrape "ponder" {
+  targets = [
+    { __address__ = "127.0.0.1:42069", job = "ponder", network = "mainnet" },
+    { __address__ = "127.0.0.1:42070", job = "ponder", network = "testnet" },
+  ]
+  metrics_path    = "/metrics"
+  forward_to      = [prometheus.remote_write.obs.receiver]
+  scrape_interval = "60s"
+}
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  forward_to = [loki.write.obs.receiver]
+}

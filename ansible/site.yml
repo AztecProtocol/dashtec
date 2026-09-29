@@ -7,6 +7,7 @@
   become: true
   roles:
     - docker # Docker Engine + compose plugin + git
+    - alloy # host metrics + container logs + Ponder /metrics -> observability VM
     - repo # clone/update /opt/dashtec
     - config # config.json secrets -> root .env (secrets from env)
     - aztec_node # start our own Aztec node, discover V5 contract addresses
