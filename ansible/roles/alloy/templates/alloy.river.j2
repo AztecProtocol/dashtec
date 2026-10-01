@@ -70,6 +70,23 @@ prometheus.relabel "containers" {
     regex         = ""
     action        = "drop"
   }
+  // Count only long-running Compose services: deploy-time one-offs
+  // (`compose run`, migrations) and plain `docker run` containers would
+  // inflate the "expected containers" baseline for hours after a deploy.
+  rule {
+    source_labels = ["container_label_com_docker_compose_oneoff"]
+    regex         = "True"
+    action        = "drop"
+  }
+  rule {
+    source_labels = ["container_label_com_docker_compose_project"]
+    regex         = ""
+    action        = "drop"
+  }
+  rule {
+    regex  = "container_label_.*"
+    action = "labeldrop"
+  }
   forward_to = [prometheus.remote_write.obs.receiver]
 }
 

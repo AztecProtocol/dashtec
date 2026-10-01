@@ -13,7 +13,9 @@ services:
       # loki.source.docker log collection.
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Container exporter: cgroup stats, Docker layer metadata, and the
-      # containerd socket (current Docker resolves names through it).
+      # containerd socket (current Docker resolves names through it). Like
+      # docker.sock, the containerd socket is root-level access to the host;
+      # :ro does not limit the API. Accepted for container health metrics.
       - /run/containerd/containerd.sock:/run/containerd/containerd.sock:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
