@@ -1,0 +1,41 @@
+---
+# Alloy + node_exporter: host metrics, container logs, and the two Ponder
+# /metrics endpoints, pushed to the Foundation observability VM over the
+# tailnet (no credentials by design; the tailnet ACL gates the path).
+- name: Alloy config directory
+  ansible.builtin.file:
+    path: /etc/alloy
+    state: directory
+    mode: "0755"
+
+- name: Render alloy config
+  ansible.builtin.template:
+    src: alloy.river.j2
+    dest: /etc/alloy/config.alloy
+    mode: "0644"
+  notify: restart alloy
+
+- name: Monitoring compose project directory
+  ansible.builtin.file:
+    path: /opt/alloy
+    state: directory
+    mode: "0755"
+
+- name: Render monitoring compose
+  ansible.builtin.template:
+    src: alloy-compose.yml.j2
+    dest: /opt/alloy/docker-compose.yml
+    mode: "0644"
+
+- name: Start monitoring stack
+  ansible.builtin.shell: |
+    cd /opt/alloy
+    docker compose up -d --remove-orphans
+
+# Handlers normally run at end of play — hours later if aztec_node's
+# ready-wait runs long, and never if a later role fails, which would leave
+# a re-rendered config silently unapplied (the template task won't
+# re-notify on the next run). Flush now so a config change restarts Alloy
+# before the long-running roles.
+- name: Apply pending alloy restarts now
+  ansible.builtin.meta: flush_handlers
