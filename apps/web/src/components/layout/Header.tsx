@@ -245,6 +245,7 @@ const desktopNavItems: DesktopNavItem[] = [
       { href: '/providers', label: 'Providers', icon: CubeIcon },
       { href: '/queue', label: 'Queue', icon: CubeIcon },
       { href: '/watchlist', label: 'Watchlist', icon: CubeIcon },
+      { href: '/migration', label: 'Migration', icon: CubeIcon },
     ],
   },
   {
@@ -285,6 +286,11 @@ const DesktopNav: React.FC = () => {
   const isLinkActive = (href: string) => pathname === href;
   const isGroupActive = (group: DesktopNavGroup) => group.links.some(l => pathname === l.href);
 
+  // The migration page only has something to show once a rollup has been replaced.
+  const { versions } = useRollup();
+  const hasPreviousRollup = versions.some(v => v.deprecated);
+  const isLinkShown = (link: DesktopNavLink) => link.href !== '/migration' || hasPreviousRollup;
+
   return (
     <nav className="hidden lg:flex items-center gap-0.5">
       {desktopNavItems.map((item) => {
@@ -321,7 +327,7 @@ const DesktopNav: React.FC = () => {
                     onMouseEnter={() => handleMouseEnter(item.label)}
                     onMouseLeave={handleMouseLeave}
                   >
-                    {item.links.map((link) => (
+                    {item.links.filter(isLinkShown).map((link) => (
                       <Link
                         key={link.href}
                         href={link.href}

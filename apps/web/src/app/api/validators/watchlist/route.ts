@@ -4,7 +4,7 @@ import { Prisma } from '@dashtec/database';
 import { logError } from '@/services/error/errorLogger';
 import { createBenchmark } from '@/services/benchmark';
 import { parseRollupParam } from '@/lib/rollupParam';
-import { getActiveRollupAddress } from '@/services/rollupRegistry';
+import { getActiveRollupAddress, getRollupRegistry } from '@/services/rollupRegistry';
 import { PaginatedValidatorsResponse } from '@/types/api';
 import {
   createValidatorAggregatesCTE,
@@ -45,22 +45,52 @@ export async function POST(request: NextRequest) {
     const isActiveRollup = rollupAddresses.length === 1 && rollupAddresses[0] === activeRollup;
 
     // Multi-stage CTE query for maximum performance with global ranks
-    benchmark.start('queryExecution');
-    const result = await prisma.$queryRaw<any[]>`
+    const queryRanked = (rollups: string[], isActive: boolean, watched: string[]) => prisma.$queryRaw<any[]>`
       WITH
-      ${createValidatorAggregatesCTE({ epochFilter, rollupAddresses, isActiveRollup })},
+      ${createValidatorAggregatesCTE({ epochFilter, rollupAddresses: rollups, isActiveRollup: isActive })},
       ${createMaxValuesCTE()},
       ${createValidatorScoresCTE()},
       ${createFinalScoresCTE()},
       ${createRankedValidatorsCTE()}
       ${createFinalSelection({ sourceTable: 'all_ranked_validators', includeCount: false })}
-      WHERE LOWER(address) = ANY(${lowerAddresses}::text[])
+      WHERE LOWER(address) = ANY(${watched}::text[])
       ORDER BY rank ASC
     `;
+
+    benchmark.start('queryExecution');
+    const result = await queryRanked(rollupAddresses, isActiveRollup, lowerAddresses);
     benchmark.end('queryExecution');
 
+    // A watched validator that never moved to the current rollup is not in it,
+    // so it would silently drop off the list after an upgrade. Look such
+    // validators up on the version they are still on and say which that is.
+    benchmark.start('previousRollups');
+    const previousRows: any[] = [];
+    if (isActiveRollup) {
+      const found = new Set(result.map(r => r.address.toLowerCase()));
+      const missing = lowerAddresses.filter(addr => !found.has(addr));
+      const registry = await getRollupRegistry();
+      const deprecated = registry.versions.filter(v => v.deprecated);
+
+      if (missing.length > 0 && deprecated.length > 0) {
+        const located = await prisma.$queryRaw<{ address: string; rollup_address: string }[]>`
+          SELECT LOWER(address) AS address, LOWER(rollup_address) AS rollup_address
+          FROM "Validator"
+          WHERE LOWER(address) = ANY(${missing}::text[])
+            AND LOWER(rollup_address) = ANY(${deprecated.map(v => v.address)}::text[])
+        `;
+        for (const version of deprecated) {
+          const onVersion = located.filter(row => row.rollup_address === version.address).map(row => row.address);
+          if (onVersion.length === 0) continue;
+          const rows = await queryRanked([version.address], false, onVersion);
+          previousRows.push(...rows.map(r => ({ ...r, rollupVersion: { address: version.address, label: version.label } })));
+        }
+      }
+    }
+    benchmark.end('previousRollups');
+
     // Extract metadata from first row
-    const totalCount = result.length;
+    const totalCount = result.length + previousRows.length;
     const maxTotalAttestations = result.length > 0 ? result[0].max_total_attestations : 0;
     const maxTotalBlocksProduced = result.length > 0 ? result[0].max_total_blocks_produced : 0;
 
@@ -73,6 +103,13 @@ export async function POST(request: NextRequest) {
         createPerformanceHistoryQuery(validatorAddresses, { limit: 10, rollupAddresses })
       )
       : [];
+
+    // History for validators still on a previous rollup comes from that rollup.
+    for (const r of previousRows) {
+      performanceHistory.push(...await prisma.$queryRaw<PerformanceHistoryRow[]>(
+        createPerformanceHistoryQuery([r.address], { limit: 10, rollupAddresses: [r.rollupVersion.address] })
+      ));
+    }
 
     benchmark.end('performanceHistory');
 
@@ -94,7 +131,7 @@ export async function POST(request: NextRequest) {
     }, {} as Record<string, any[]>);
 
     // Clean up the response and attach epoch performance history
-    const validators = result.map(r => ({
+    const validators = [...result, ...previousRows].map(r => ({
       address: r.address,
       index: r.index,
       balance: Number(r.balance),
@@ -129,7 +166,8 @@ export async function POST(request: NextRequest) {
       proposalSuccess: r.proposalSuccess,
       performanceScore: Number(r.performanceScore),
       rank: r.rank,
-      epochPerformanceHistory: historyByValidator[r.address] || []
+      epochPerformanceHistory: historyByValidator[r.address] || [],
+      rollupVersion: r.rollupVersion,
     }));
 
     // Get status counts for the watchlist

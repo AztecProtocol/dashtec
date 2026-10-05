@@ -4,7 +4,7 @@ import { ValidatorPerformance } from '@/types';
 import { SequencerMiniChart } from './SequencerMiniChart';
 import { VALIDATOR_STATUS } from '@/utils/constants';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
-import { StarIcon as StarOutlineIcon, ArrowTopRightOnSquareIcon, WalletIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarOutlineIcon, ArrowTopRightOnSquareIcon, WalletIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { useNotification } from '@/context/NotificationContext';
 import { ValidatorAvatar } from '@/components/ui/ValidatorAvatar';
@@ -137,6 +137,16 @@ export const WatchlistValidatorCard: React.FC<WatchlistValidatorCardProps> = ({ 
             <span className={`w-2 h-2 rounded-full ${statusStyles.dot}`}></span>
             {validator.status}
           </span>
+          {validator.rollupVersion && (
+            <Link
+              href={`/migration?from=${validator.rollupVersion.address}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:ring-amber-700/50 dark:hover:bg-amber-900/30 transition-colors"
+              title={`Hasn't moved to the current rollup. Rank and score are within ${validator.rollupVersion.label}.`}
+            >
+              <ArrowPathIcon className="h-3.5 w-3.5" />
+              Still on {validator.rollupVersion.label}
+            </Link>
+          )}
           {validator.balance ? (() => {
             const { formatted } = formatBalanceWithUsd(validator.balance, stakingTokenDecimals, stakingTokenSymbol, true);
             return (

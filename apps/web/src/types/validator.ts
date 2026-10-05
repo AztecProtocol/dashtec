@@ -142,6 +142,8 @@ export interface ValidatorPerformance extends Validator {
   performanceScore: number;
   rank: number;
   isInQueue?: boolean;
+  /** Set when the validator is still on a previous rollup version; rank is within that version. */
+  rollupVersion?: { address: string; label: string };
 }
 
 export type SlotActivityStatus =

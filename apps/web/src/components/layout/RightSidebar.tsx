@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRollupOptional } from '@/context/RollupContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import {
@@ -18,7 +19,8 @@ import {
   ChevronDownIcon,
   ScaleIcon,
   CubeIcon,
-  CpuChipIcon
+  CpuChipIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { ThemeToggleButton } from '../ui/ThemeToggleButton';
 import { ConnectWallet } from '../ui/ConnectWallet';
@@ -53,6 +55,8 @@ const isNavGroup = (item: NavItem): item is NavGroup => {
 export const RightSidebar: React.FC<RightSidebarProps> = ({ isOpen, onClose, onSearchClick }) => {
   const pathname = usePathname();
   const { watchlist } = useWatchlist();
+  // The migration page only has something to show once a rollup has been replaced.
+  const hasPreviousRollup = useRollupOptional()?.versions.some(v => v.deprecated) ?? false;
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Sequencer', 'Epoch', 'Governance', 'Prover']);
 
   const navItems: NavItem[] = [
@@ -65,6 +69,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ isOpen, onClose, onS
         { href: '/providers', label: 'Providers', icon: BuildingOffice2Icon },
         { href: '/queue', label: 'Queue', icon: QueueListIcon },
         { href: '/watchlist', label: 'Watchlist', icon: StarIcon },
+        ...(hasPreviousRollup ? [{ href: '/migration', label: 'Migration', icon: ArrowPathIcon }] : []),
       ],
     },
     {
