@@ -16,7 +16,7 @@
   },
   "aztecNode": {
     "url": "http://aztec-node-testnet:8080",
-    "image": "aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0",
+    "image": "azteclabs/aztec:6.0.0-rc.1@sha256:97e2db7dde9f5730bbd3734a094500be9b4f9945325fa862aa7d15a5d18ccfb1",
     "network": "testnet",
     "p2pPort": 40500,
     "syncMode": "snapshot",

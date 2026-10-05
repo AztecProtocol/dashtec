@@ -16,7 +16,7 @@
   },
   "aztecNode": {
     "url": "http://aztec-node-testnet:8080",
-    "image": "aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0",
+    "image": "azteclabs/aztec:6.0.0-rc.1@sha256:97e2db7dde9f5730bbd3734a094500be9b4f9945325fa862aa7d15a5d18ccfb1",
     "network": "testnet",
     "p2pPort": 40500,
     "syncMode": "snapshot",
@@ -26,10 +26,10 @@
     "memLimit": "6g"
   },
   "contracts": {
-    "rollupAddress": "0xd73a91bdcf6891c7642f3e460036e1ef2cc23178",
+    "rollupAddress": "0x8c2fb2a68a3d362ab1de99e06f83f8903160bbd9",
     "governanceAddress": "0xcaf7447721447b22cd0076ac7c63877c3afd329f",
     "governanceProposerAddress": "0x01c7d4ca153748d2377968fef22894cb162e9480",
-    "slashingProposerAddress": "0x504331248eb1359c247a0e6895fffea70ecdb9a8",
+    "slashingProposerAddress": "0xb7d4e1aeed9238576299cf3e2556e7e14c38c386",
     "gseAddress": "0xb6a38a51a6c1de9012f9d8ea9745ef957212eaac",
     "stakingRegistryAddress": "0xC6EcC1832c8BF6a41c927BEb4E9ec610FBeDd1C2",
     "registryAddress": "0xa0bfb1b494fb49041e5c6e8c2c1be09cd171c6ba",
@@ -69,14 +69,14 @@
   "ponder": {
     "port": 42069,
     "maxHealthcheckDuration": 240,
-    "startBlock": 11250166,
+    "startBlock": 11785332,
     "startBlocks": {
       "governance": 9500000,
       "governanceProposer": 9500000,
       "gse": 9500000,
       "registry": 9500000,
-      "rollup": 11250166,
-      "slashingProposer": 11250166,
+      "rollup": 11785332,
+      "slashingProposer": 11785332,
       "stakingRegistry": 9500000
     },
     "_comment": "startBlock/startBlocks are verified by `pnpm env:discover testnet` and only re-derived when a contract address changes. Survivor blocks are the historical 9500000 floor rather than measured deployments \u2014 correct but wasteful; see contracts._comment."

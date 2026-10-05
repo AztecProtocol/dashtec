@@ -348,7 +348,7 @@ services:
   # Aztec node (testnet). Same shape as mainnet; a distinct P2P port so both can
   # publish on the one host.
   aztec-node-testnet:
-    image: ${AZTEC_NODE_IMAGE_TESTNET:-aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0}
+    image: ${AZTEC_NODE_IMAGE_TESTNET:-azteclabs/aztec:6.0.0-rc.1@sha256:97e2db7dde9f5730bbd3734a094500be9b4f9945325fa862aa7d15a5d18ccfb1}
     container_name: dashtec-aztec-node-testnet
     command: ["start", "--node"]
     init: true
