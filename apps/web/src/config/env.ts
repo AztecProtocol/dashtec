@@ -7,6 +7,8 @@ const envSchema = z.object({
   SESSION_PASSWORD: z.string().min(32, 'Password must be at least 32 characters'),
 
   ROLLUP_CONTRACT_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
+  // "address:label" pairs naming rollup versions (V5, V6); see propagate-app.js.
+  ROLLUP_LABELS: z.string().optional(),
   SLASHING_PROPOSER_CONTRACT_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
   GOVERNANCE_PROPOSER_CONTRACT_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
   STAKING_REGISTRY_CONTRACT_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),

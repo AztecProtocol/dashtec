@@ -10,6 +10,20 @@ let cacheTimestamp = 0;
 const CACHE_TTL_MS = 60_000; // 1 minute
 const IMMUTABLE_CACHE_MS = 86_400_000; // 24 hours — contract addresses are immutable per rollup
 
+/**
+ * Display names for rollup versions. On-chain versions are config hashes
+ * (v2914217885), so the deploy records the software major each rollup ran
+ * (V5, V6) and we prefer that when it is known.
+ */
+function rollupLabels(): Map<string, string> {
+  const labels = new Map<string, string>();
+  for (const entry of (getEnv().ROLLUP_LABELS ?? '').split(',')) {
+    const [address, label] = entry.trim().split(':');
+    if (address && label) labels.set(address.toLowerCase(), label);
+  }
+  return labels;
+}
+
 /** Load rollup registry from CanonicalRollupUpdated table, with env fallback */
 export async function getRollupRegistry(): Promise<RollupRegistry> {
   const now = Date.now();
@@ -18,6 +32,7 @@ export async function getRollupRegistry(): Promise<RollupRegistry> {
   }
 
   const rows = await prisma.canonicalRollupUpdated.findMany();
+  const labels = rollupLabels();
 
   if (rows.length > 0) {
     // Sort numerically — block_number is BigInt and log_index is Int from Prisma
@@ -28,7 +43,7 @@ export async function getRollupRegistry(): Promise<RollupRegistry> {
 
     const versions = sorted.map((row) => ({
       address: row.instance_address.toLowerCase(),
-      label: `v${row.version}`,
+      label: labels.get(row.instance_address.toLowerCase()) ?? `v${row.version}`,
       startBlock: Number(row.block_number),
       endBlock: null as number | null,
       deprecated: false,
@@ -47,7 +62,7 @@ export async function getRollupRegistry(): Promise<RollupRegistry> {
     cachedRegistry = {
       versions: [{
         address: env.ROLLUP_CONTRACT_ADDRESS.toLowerCase(),
-        label: 'v1',
+        label: labels.get(env.ROLLUP_CONTRACT_ADDRESS.toLowerCase()) ?? 'v1',
         startBlock: 0,
         endBlock: null,
         deprecated: false,

@@ -27,6 +27,7 @@
   },
   "contracts": {
     "rollupAddress": "0x91ff8bbd8ebb07893010d50a48a1609e5ebd8e34",
+    "rollupLabel": "V5",
     "governanceAddress": "0x1102471eb3378fee427121c9efcea452e4b6b75e",
     "governanceProposerAddress": "0x06ef1dcf87e419c48b94a331b252819fadbd63ef",
     "slashingProposerAddress": "0x8a36b8f2ca71d8d8bd98e03ebf8b4d0939daf0ba",

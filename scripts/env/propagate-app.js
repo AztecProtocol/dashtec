@@ -7,6 +7,17 @@ import { loadConfig, buildEnvContent, ROOT_DIR } from './utils.js';
 const network = process.argv[2];
 const config = loadConfig(network);
 
+/** "address:label" pairs naming each rollup version (V5, V6) for the UI. */
+function rollupLabels(contracts) {
+  return [
+    ...(contracts.previousRollups ?? []).map((rollup) => [rollup.rollupAddress, rollup.label]),
+    [contracts.rollupAddress, contracts.rollupLabel],
+  ]
+    .filter(([address, label]) => address && label)
+    .map(([address, label]) => `${address.toLowerCase()}:${label}`)
+    .join(',');
+}
+
 const envMapRuntime = {
   '#database': 'Database',
   'DATABASE_URL': config.database.url,
@@ -18,6 +29,7 @@ const envMapRuntime = {
   '#contracts': 'Contract Addresses',
   'ROLLUP_CONTRACT_ADDRESS': config.contracts.rollupAddress,
   'SLASHING_PROPOSER_CONTRACT_ADDRESS': config.contracts.slashingProposerAddress,
+  'ROLLUP_LABELS': rollupLabels(config.contracts),
   'GOVERNANCE_PROPOSER_CONTRACT_ADDRESS': config.contracts.governanceProposerAddress,
   'STAKING_REGISTRY_CONTRACT_ADDRESS': config.contracts.stakingRegistryAddress,
 
@@ -77,6 +89,7 @@ const envMapBuild = {
   'NEXT_SENTINEL_URL': config.aztecNode.url,
   'ROLLUP_CONTRACT_ADDRESS': config.contracts.rollupAddress,
   'SLASHING_PROPOSER_CONTRACT_ADDRESS': config.contracts.slashingProposerAddress,
+  'ROLLUP_LABELS': rollupLabels(config.contracts),
   'GOVERNANCE_PROPOSER_CONTRACT_ADDRESS': config.contracts.governanceProposerAddress,
   'STAKING_REGISTRY_CONTRACT_ADDRESS': config.contracts.stakingRegistryAddress,
 };

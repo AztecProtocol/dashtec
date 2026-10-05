@@ -387,6 +387,25 @@ try {
 // earlier dashtec rather than leaving a dead address behind.
 delete config.contracts.slashFactoryAddress;
 
+// On-chain rollup versions are config hashes (2914217885), and registry indices
+// differ per network, so neither reads as the "V6" people call it. Our node runs
+// the software for the current rollup, so its major version is the name. Only
+// set when the rollup changes (or has no label yet): a node patch release for
+// the same rollup must not rename it.
+let nodeMajor = null;
+try {
+  const nodeVersion = String(await rpc(nodeUrl, 'node_getNodeVersion', []));
+  nodeMajor = /^v?(\d+)\./.exec(nodeVersion)?.[1] ?? null;
+} catch (error) {
+  console.warn(`  ⚠ Could not read the node version (${error.message}); rollup label left as is`);
+}
+const rollupChanged = String(before.rollupAddress ?? '').toLowerCase() !== discovered.rollupAddress;
+if (nodeMajor && (rollupChanged || !before.rollupLabel)) {
+  discovered.rollupLabel = `V${nodeMajor}`;
+} else if (rollupChanged) {
+  delete config.contracts.rollupLabel;
+}
+
 // The registry moving to a new rollup does not move every validator with it:
 // those who staked against the old instance stay there until they exit, and
 // their withdrawals are emitted by the old rollup. Keep each superseded rollup
@@ -401,7 +420,11 @@ if (
 ) {
   const previousStart = cachedStartBlocks.rollup ?? config.ponder?.startBlock;
   if (Number.isInteger(previousStart) && previousStart > 0) {
-    previousRollups.push({ rollupAddress: previousRollupAddress, startBlock: previousStart });
+    previousRollups.push({
+      rollupAddress: previousRollupAddress,
+      startBlock: previousStart,
+      ...(before.rollupLabel ? { label: before.rollupLabel } : {}),
+    });
     console.log(`  + previousRollups             ${previousRollupAddress} (from block ${previousStart})`);
   } else {
     console.warn(`  ⚠ ${previousRollupAddress} was replaced but has no start block — not keeping it indexed`);
@@ -418,7 +441,7 @@ config.ponder = { ...config.ponder, startBlock, startBlocks };
 
 for (const [key, value] of Object.entries(discovered)) {
   const previous = String(before[key] ?? '').toLowerCase();
-  const marker = previous === value ? ' ' : '~';
+  const marker = previous === String(value).toLowerCase() ? ' ' : '~';
   console.log(`  ${marker} ${key.padEnd(28)} ${value}`);
 }
 console.log('');

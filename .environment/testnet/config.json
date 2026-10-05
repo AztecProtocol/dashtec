@@ -27,6 +27,7 @@
   },
   "contracts": {
     "rollupAddress": "0x8c2fb2a68a3d362ab1de99e06f83f8903160bbd9",
+    "rollupLabel": "V6",
     "governanceAddress": "0xcaf7447721447b22cd0076ac7c63877c3afd329f",
     "governanceProposerAddress": "0x01c7d4ca153748d2377968fef22894cb162e9480",
     "slashingProposerAddress": "0xb7d4e1aeed9238576299cf3e2556e7e14c38c386",
@@ -36,7 +37,8 @@
     "previousRollups": [
       {
         "rollupAddress": "0xd73a91bdcf6891c7642f3e460036e1ef2cc23178",
-        "startBlock": 11250166
+        "startBlock": 11250166,
+        "label": "V5"
       }
     ],
     "_comment": "Verified against the Aztec node on every deploy by `pnpm env:discover testnet` and rewritten if the chain disagrees. Committed rather than zeroed so the deploy can skip the ~25-call deployment-block search per contract. slashingProposerAddress is derived on-chain each run (Rollup.getSlasher -> Slasher.PROPOSER). stakingRegistryAddress is not part of the Aztec core deployment and is not discovered."
