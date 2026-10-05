@@ -268,7 +268,10 @@ try {
   // reusing the address we already know. Fall back to the committed value and
   // say so loudly; the next successful deploy re-verifies it.
   const committed = String(before.slashingProposerAddress ?? '').toLowerCase();
-  if (/^0x[0-9a-f]{40}$/.test(committed) && committed !== ZERO) {
+  // The committed proposer belongs to the committed rollup; after an upgrade it
+  // is the previous version's, so it is no fallback for the new one.
+  const rollupUnchanged = String(before.rollupAddress ?? '').toLowerCase() === discovered.rollupAddress;
+  if (rollupUnchanged && /^0x[0-9a-f]{40}$/.test(committed) && committed !== ZERO) {
     console.warn(`  ⚠ Could not read the slashing proposer from L1 (${error.message}).`);
     console.warn(`    Falling back to the committed address ${committed}.`);
     console.warn('    If governance has replaced the slasher since, this will index the old');
@@ -384,7 +387,32 @@ try {
 // earlier dashtec rather than leaving a dead address behind.
 delete config.contracts.slashFactoryAddress;
 
-config.contracts = { ...config.contracts, ...discovered };
+// The registry moving to a new rollup does not move every validator with it:
+// those who staked against the old instance stay there until they exit, and
+// their withdrawals are emitted by the old rollup. Keep each superseded rollup
+// (with the start block it was indexed from) so Ponder goes on watching it.
+const previousRollupAddress = String(before.rollupAddress ?? '').toLowerCase();
+const previousRollups = [...(config.contracts.previousRollups ?? [])];
+if (
+  /^0x[0-9a-f]{40}$/.test(previousRollupAddress) &&
+  previousRollupAddress !== ZERO &&
+  previousRollupAddress !== discovered.rollupAddress &&
+  !previousRollups.some((rollup) => rollup.rollupAddress.toLowerCase() === previousRollupAddress)
+) {
+  const previousStart = cachedStartBlocks.rollup ?? config.ponder?.startBlock;
+  if (Number.isInteger(previousStart) && previousStart > 0) {
+    previousRollups.push({ rollupAddress: previousRollupAddress, startBlock: previousStart });
+    console.log(`  + previousRollups             ${previousRollupAddress} (from block ${previousStart})`);
+  } else {
+    console.warn(`  ⚠ ${previousRollupAddress} was replaced but has no start block — not keeping it indexed`);
+  }
+}
+
+config.contracts = {
+  ...config.contracts,
+  ...discovered,
+  previousRollups: previousRollups.filter((rollup) => rollup.rollupAddress.toLowerCase() !== discovered.rollupAddress),
+};
 // `startBlock` stays the rollup's, as the default for anything without its own.
 config.ponder = { ...config.ponder, startBlock, startBlocks };
 

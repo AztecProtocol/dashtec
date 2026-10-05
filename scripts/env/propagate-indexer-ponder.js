@@ -37,6 +37,10 @@ const envMap = {
   'START_BLOCK_GOVERNANCE': config.ponder.startBlocks?.governance ?? config.ponder.startBlock,
   'START_BLOCK_GOVERNANCE_PROPOSER': config.ponder.startBlocks?.governanceProposer ?? config.ponder.startBlock,
   'START_BLOCK_STAKING_REGISTRY': config.ponder.startBlocks?.stakingRegistry ?? config.ponder.startBlock,
+  // Deprecated rollups stay indexed so their validators' exits are still seen.
+  'PREVIOUS_ROLLUPS': (config.contracts.previousRollups ?? [])
+    .map((rollup) => `${rollup.rollupAddress}:${rollup.startBlock}`)
+    .join(','),
   'REDIS_URL': config.ponder.redis?.url,
 
   '#network': 'Network',

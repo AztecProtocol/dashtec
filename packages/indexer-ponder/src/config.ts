@@ -34,6 +34,18 @@ const configSchema = z.object({
   START_BLOCK_GOVERNANCE: z.string().transform(Number).optional(),
   START_BLOCK_GOVERNANCE_PROPOSER: z.string().transform(Number).optional(),
   START_BLOCK_STAKING_REGISTRY: z.string().transform(Number).optional(),
+  // Rollups the registry has moved past, as "address:startBlock" pairs. Their
+  // validators keep exiting after an upgrade, so they stay indexed alongside the
+  // current one; written by discover-contracts.js when the rollup changes.
+  PREVIOUS_ROLLUPS: z.string().default('').transform((val) =>
+    val.split(',').map((entry) => entry.trim()).filter(Boolean).map((entry) => {
+      const [address, startBlock] = entry.split(':');
+      if (!/^0x[a-fA-F0-9]{40}$/.test(address ?? '') || !/^\d+$/.test(startBlock ?? '')) {
+        throw new Error(`Invalid PREVIOUS_ROLLUPS entry: ${entry}`);
+      }
+      return { address: address.toLowerCase() as `0x${string}`, startBlock: Number(startBlock) };
+    })
+  ),
   NETWORK_TYPE: z.string(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),

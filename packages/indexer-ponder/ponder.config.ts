@@ -37,14 +37,23 @@ export default createConfig({
   },
   contracts: {
     /**
-     * Rollup Contract
+     * Rollup Contract — the current one plus every previous version
      * Events: Deposit, FailedDeposit, WithdrawInitiated, WithdrawFinalized
+     *
+     * Validators left on a deprecated rollup still exit through it, so it stays
+     * indexed after an upgrade. Handlers take the rollup from event.log.address.
      */
     Rollup: {
       chain: config.NETWORK_TYPE,
-      address: config.ROLLUP_CONTRACT_ADDRESS as `0x${string}`,
+      address: [
+        config.ROLLUP_CONTRACT_ADDRESS as `0x${string}`,
+        ...config.PREVIOUS_ROLLUPS.map((rollup) => rollup.address),
+      ],
       abi: RollupABI,
-      startBlock: config.START_BLOCK,
+      startBlock: Math.min(
+        config.START_BLOCK,
+        ...config.PREVIOUS_ROLLUPS.map((rollup) => rollup.startBlock),
+      ),
     },
 
     /**

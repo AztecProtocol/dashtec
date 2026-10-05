@@ -33,6 +33,7 @@
     "gseAddress": "0xa92ecfd0e70c9cd5e5cd76c50af0f7da93567a4f",
     "stakingRegistryAddress": "0x042dF8f42790d6943F41C25C2132400fd727f452",
     "registryAddress": "0x35b22e09ee0390539439e24f06da43d83f90e298",
+    "previousRollups": [],
     "_comment": "Verified against the Aztec node on every deploy by `pnpm env:discover mainnet` and rewritten if the chain disagrees. Committed rather than zeroed so the deploy can skip the ~25-call deployment-block search per contract; a wrong value here is corrected automatically, an absent one costs ~175 RPC calls. stakingRegistryAddress is not part of the Aztec core deployment and is not discovered."
   },
   "collectors": {

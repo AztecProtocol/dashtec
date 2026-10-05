@@ -4,7 +4,6 @@ import { deposit } from 'ponder:schema';
 // [DISABLED] Sync replaced by materializer
 // import { removeFromQueue } from '../../sync/validator-queue';
 // import { bootstrapValidatorOnDeposit } from '../../sync/validator/service';
-import { config } from '../../config';
 import { RollupABI } from '@dashtec/shared-types/abis';
 import type { Address } from 'viem';
 import { logBlockHash } from '../../lib/block-hash';
@@ -28,7 +27,7 @@ ponder.on('Rollup:Deposit', async ({ event, context }) => {
 
   try {
     const attesterView = await context.client.readContract({
-      address: config.ROLLUP_CONTRACT_ADDRESS as Address,
+      address: event.log.address as Address,
       abi: RollupABI,
       functionName: 'getAttesterView',
       args: [attesterAddress as Address],
