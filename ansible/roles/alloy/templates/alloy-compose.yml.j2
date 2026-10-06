@@ -1,0 +1,43 @@
+name: monitoring
+
+services:
+  alloy:
+    image: {{ alloy_image }}
+    container_name: alloy
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /etc/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # :ro flags the socket file, not the API — any access to the docker
+      # socket is effectively root on the host. Accepted trade-off for
+      # loki.source.docker log collection.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Container exporter: cgroup stats, Docker layer metadata, and the
+      # containerd socket (current Docker resolves names through it). Like
+      # docker.sock, the containerd socket is root-level access to the host;
+      # :ro does not limit the API. Accepted for container health metrics.
+      - /run/containerd/containerd.sock:/run/containerd/containerd.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+      - alloy_data:/var/lib/alloy/data
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=127.0.0.1:12345
+
+  node_exporter:
+    image: {{ node_exporter_image }}
+    container_name: node_exporter
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address={{ node_exporter_listen }}
+
+volumes:
+  alloy_data:

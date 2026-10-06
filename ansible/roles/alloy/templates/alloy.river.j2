@@ -1,0 +1,110 @@
+logging {
+  level  = "info"
+  format = "json"
+}
+
+prometheus.remote_write "obs" {
+  external_labels = {
+    cluster = "dashtec",
+    host    = "{{ inventory_hostname }}",
+  }
+  endpoint {
+    url = "{{ observability_metrics_url }}"
+  }
+}
+
+loki.write "obs" {
+  external_labels = {
+    cluster = "dashtec",
+    host    = "{{ inventory_hostname }}",
+  }
+  endpoint {
+    url = "{{ observability_logs_url }}"
+  }
+}
+
+prometheus.scrape "host" {
+  targets = [
+    { __address__ = "{{ node_exporter_listen }}", job = "node_exporter" },
+  ]
+  forward_to      = [prometheus.remote_write.obs.receiver]
+  scrape_interval = "60s"
+}
+
+// Ponder ships /metrics natively on its HTTP port. Mainnet and testnet
+// indexers publish on 42069/42070 (compose port map in /opt/dashtec).
+prometheus.scrape "ponder" {
+  targets = [
+    { __address__ = "{{ ponder_mainnet_metrics_addr }}", job = "ponder", network = "mainnet" },
+    { __address__ = "{{ ponder_testnet_metrics_addr }}", job = "ponder", network = "testnet" },
+  ]
+  metrics_path    = "/metrics"
+  forward_to      = [prometheus.remote_write.obs.receiver]
+  scrape_interval = "60s"
+}
+
+// Per-container health: running set, restarts (CPU counter resets), CPU,
+// memory. Kept to the four metrics the dashboard and alerts use; the
+// exporter emits ~70 per container otherwise. Needs the containerd socket
+// mount: current Docker resolves container names through containerd.
+prometheus.exporter.cadvisor "containers" {
+  docker_host      = "unix:///var/run/docker.sock"
+  docker_only      = true
+  storage_duration = "5m"
+}
+
+prometheus.scrape "containers" {
+  targets         = prometheus.exporter.cadvisor.containers.targets
+  forward_to      = [prometheus.relabel.containers.receiver]
+  scrape_interval = "60s"
+}
+
+prometheus.relabel "containers" {
+  rule {
+    source_labels = ["__name__"]
+    regex         = "container_(last_seen|cpu_usage_seconds_total|memory_working_set_bytes|spec_memory_limit_bytes)"
+    action        = "keep"
+  }
+  rule {
+    source_labels = ["name"]
+    regex         = ""
+    action        = "drop"
+  }
+  // Count only long-running Compose services: deploy-time one-offs
+  // (`compose run`, migrations) and plain `docker run` containers would
+  // inflate the "expected containers" baseline for hours after a deploy.
+  rule {
+    source_labels = ["container_label_com_docker_compose_oneoff"]
+    regex         = "True"
+    action        = "drop"
+  }
+  rule {
+    source_labels = ["container_label_com_docker_compose_project"]
+    regex         = ""
+    action        = "drop"
+  }
+  rule {
+    regex  = "container_label_.*"
+    action = "labeldrop"
+  }
+  forward_to = [prometheus.remote_write.obs.receiver]
+}
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  forward_to = [loki.write.obs.receiver]
+}
