@@ -49,8 +49,14 @@ x_client_secret: "{{ lookup('env', 'X_CLIENT_SECRET') }}"
 alloy_image: "grafana/alloy:v1.16.0"
 node_exporter_image: "prom/node-exporter:v1.9.1"
 node_exporter_listen: "127.0.0.1:9100"
-observability_metrics_url: "http://aztec-observability-fsn1:9090/api/v1/write"
-observability_logs_url: "http://aztec-observability-fsn1:3100/loki/api/v1/push"
+# Tailnet address of the Foundation observability VM, from the
+# OBSERVABILITY_HOST repo variable (kept out of this public repo, like
+# DEPLOY_HOST). An address, not the VM's name: this host joins the tailnet
+# with --accept-dns=false (terraform/templates/user_data.sh.tftpl), so tailnet
+# names do not resolve here.
+observability_host: "{{ lookup('env', 'OBSERVABILITY_HOST') }}"
+observability_metrics_url: "http://{{ observability_host }}:9090/api/v1/write"
+observability_logs_url: "http://{{ observability_host }}:3100/loki/api/v1/push"
 
 # Scrape addresses for the two Ponder /metrics endpoints. These must track
 # the compose port mappings (${PONDER_PORT:-42069} / ${PONDER_TESTNET_PORT:-42070})

@@ -5,9 +5,19 @@
 - name: Configure and deploy dashtec
   hosts: dashtec
   become: true
+  pre_tasks:
+    # Monitoring must never block an app deploy: without the address the
+    # agent is skipped (and the DashtecSilent alert reports the gap).
+    - name: Warn when the monitoring agent is not configured
+      ansible.builtin.debug:
+        msg: >-
+          OBSERVABILITY_HOST is not set: skipping the monitoring agent. Set
+          the repo variable to the observability VM's tailnet address.
+      when: observability_host | length == 0
   roles:
     - docker # Docker Engine + compose plugin + git
-    - alloy # host metrics + container logs + Ponder /metrics -> observability VM
+    - role: alloy # host metrics + container logs + Ponder /metrics -> observability VM
+      when: observability_host | length > 0
     - repo # clone/update /opt/dashtec
     - config # config.json secrets -> root .env (secrets from env)
     - aztec_node # start our own Aztec node, discover V5 contract addresses

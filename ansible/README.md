@@ -72,6 +72,7 @@ Push to `main` (or run the workflow manually) triggers the deploy. The runner:
 | `DEPLOY_HOST` | Tailnet hostname of the server (defaults to `dashtec-host`) |
 | `DISCORD_CLIENT_ID` | Discord OAuth client ID — shared across networks (optional) |
 | `X_CLIENT_ID` | X OAuth client ID — shared across networks (optional) |
+| `OBSERVABILITY_HOST` | Tailnet address of the Foundation observability VM the monitoring agent pushes to (without it the deploy skips the agent) |
 
 The OAuth client IDs are public, so they're variables rather than secrets; pair
 each with its corresponding `*_CLIENT_SECRET`.

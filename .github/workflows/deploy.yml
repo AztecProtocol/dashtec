@@ -73,3 +73,6 @@ jobs:
           DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
           X_CLIENT_ID: ${{ vars.X_CLIENT_ID }}
           X_CLIENT_SECRET: ${{ secrets.X_CLIENT_SECRET }}
+          # Tailnet address of the observability VM the monitoring agent
+          # pushes to (not sensitive, but kept out of the public repo).
+          OBSERVABILITY_HOST: ${{ vars.OBSERVABILITY_HOST }}
