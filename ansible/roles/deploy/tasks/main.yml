@@ -8,13 +8,20 @@
     cmd: >-
       docker run --rm
       -v {{ app_dir }}:/app -w /app
-      node:20-alpine node scripts/env/propagate-all.js {{ item }}
+      node:24.22.1-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 node scripts/env/propagate-all.js {{ item }}
   loop: "{{ dashtec_networks }}"
   changed_when: true
 
-- name: Build images and start each network profile
+- name: Build application images with refreshed bases
   ansible.builtin.command:
-    cmd: docker compose --profile {{ item }} up -d --build
+    cmd: docker compose --profile {{ item }} build --pull --no-cache
+    chdir: "{{ app_dir }}"
+  loop: "{{ dashtec_networks }}"
+  changed_when: true
+
+- name: Start each network profile
+  ansible.builtin.command:
+    cmd: docker compose --profile {{ item }} up -d --no-build
     chdir: "{{ app_dir }}"
   loop: "{{ dashtec_networks }}"
   changed_when: true
