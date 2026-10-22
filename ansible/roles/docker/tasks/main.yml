@@ -1,4 +1,10 @@
 ---
+- name: Upgrade the host CA trust package
+  ansible.builtin.apt:
+    name: ca-certificates
+    state: latest
+    update_cache: true
+
 - name: Install prerequisites
   ansible.builtin.apt:
     name:
