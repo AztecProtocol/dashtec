@@ -8,16 +8,39 @@
     cmd: >-
       docker run --rm
       -v {{ app_dir }}:/app -w /app
-      node:20-alpine node scripts/env/propagate-all.js {{ item }}
+      node:24.22.1-alpine node scripts/env/propagate-all.js {{ item }}
   loop: "{{ dashtec_networks }}"
   changed_when: true
 
 - name: Build images and start each network profile
+  # <network>-previous adds the node and stats indexer for a replaced rollup
+  # that is still producing blocks, when config.json has a previousRollupNode.
   ansible.builtin.command:
-    cmd: docker compose --profile {{ item }} up -d --build
+    cmd: >-
+      docker compose --profile {{ item }}
+      {{ ('--profile ' ~ item ~ '-previous') if dashtec_config[item].previousRollupNode is defined else '' }}
+      up -d --build
     chdir: "{{ app_dir }}"
   loop: "{{ dashtec_networks }}"
   changed_when: true
+
+- name: Stop the previous-rollup node and indexer once they are no longer configured
+  # Named explicitly rather than via --remove-orphans: each network is brought up
+  # on its own, and the other network's containers must never look orphaned.
+  # A no-op when they were never started, or when docker-compose.yml defines no
+  # previous-rollup services for the network at all (mainnet, today). The node's
+  # data volume is kept.
+  ansible.builtin.shell:
+    cmd: >-
+      if docker compose --profile {{ item }}-previous config --services
+      | grep -qx 'aztec-node-{{ item }}-previous'; then
+      docker compose --profile {{ item }}-previous rm --stop --force
+      aztec-node-{{ item }}-previous indexer-custom-{{ item }}-previous;
+      fi
+    chdir: "{{ app_dir }}"
+  loop: "{{ dashtec_networks }}"
+  when: dashtec_config[item].previousRollupNode is not defined
+  changed_when: false
 
 # Apply Prisma migrations against each network's database. Runs a one-off using
 # the indexer-ponder image (which includes prisma + the migrations dir) and that

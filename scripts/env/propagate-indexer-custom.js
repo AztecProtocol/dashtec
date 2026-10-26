@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { writeFileSync } from 'fs';
+import { writeFileSync, existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { loadConfig, buildEnvContent, ROOT_DIR } from './utils.js';
 
@@ -60,3 +60,21 @@ const content = buildEnvContent(network, envMap);
 const envPath = join(ROOT_DIR, 'packages', 'indexer-custom', `.env.${network}`);
 writeFileSync(envPath, content);
 console.log(`✓ Generated packages/indexer-custom/.env.${network}`);
+
+// A replaced rollup that is still producing blocks gets its own stats-only
+// instance (indexer-custom-<network>-previous), reading its own Aztec node and
+// writing rows under its own rollup address.
+const previousEnvPath = join(ROOT_DIR, 'packages', 'indexer-custom', `.env.${network}-previous`);
+if (config.previousRollupNode) {
+  const previousContent = buildEnvContent(network, {
+    ...envMap,
+    'VALIDATOR_STATS_RPC_URL': config.previousRollupNode.url,
+    'ROLLUP_CONTRACT_ADDRESS': config.previousRollupNode.rollupAddress,
+    'COLLECTORS': 'validatorStats,epochAggregates,epochIntegrity',
+  });
+  writeFileSync(previousEnvPath, previousContent);
+  console.log(`✓ Generated packages/indexer-custom/.env.${network}-previous`);
+} else if (existsSync(previousEnvPath)) {
+  unlinkSync(previousEnvPath);
+  console.log(`✓ Removed packages/indexer-custom/.env.${network}-previous (no previousRollupNode)`);
+}

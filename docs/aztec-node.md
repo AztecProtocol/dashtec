@@ -155,8 +155,8 @@ data volume comes back in well under a minute.
 `contracts.stakingRegistryAddress` is **not** discovered — it is not part of the
 Aztec core deployment and must be set by hand.
 
-The script has no dependencies (it runs under a bare `node:20-alpine`, same as
-`propagate-all.js`), so the two function selectors it needs are hardcoded with
+The script has no dependencies (it runs under a bare `node:24.22.1-alpine`, same as
+`propagate-all.js`), so the function selectors it needs are hardcoded with
 their derivations noted in the source.
 
 ## Operating
@@ -169,7 +169,7 @@ docker compose --profile mainnet exec aztec-node-mainnet \
 
 # re-discover after an Aztec network upgrade
 docker run --rm --network dashtec_default -v /opt/dashtec:/app -w /app \
-  node:20-alpine node scripts/env/discover-contracts.js mainnet
+  node:24.22.1-alpine node scripts/env/discover-contracts.js mainnet
 ```
 
 ### Upgrading the node
@@ -204,15 +204,32 @@ curl -s https://hub.docker.com/v2/repositories/aztecprotocol/aztec/tags/5.2.0 \
 ### After a rollup redeployment
 
 An Aztec upgrade deploys a *new* rollup at a *new* address. `env:discover` moves
-`ponder.startBlock` to that contract's deployment block, so Ponder indexes the new
-rollup from scratch and does not carry the old one's events forward. Historical
-data from the previous rollup stays in Postgres but is no longer extended.
+`ponder.startBlock` to that contract's deployment block and records every rollup
+the registry moved through since the committed one in `contracts.previousRollups`
+(address, deployment block, slashing proposer, label). Ponder keeps indexing all
+of them: validators who never moved still exit through the old rollup, and an old
+rollup can keep producing blocks — testnet's V5 did, for weeks after V6.
+
+Labels come from the node's major version: the first rollup on a major is `V6`,
+later redeployments on the same major are `V6.1`, `V6.2`.
+
+#### A previous rollup that is still running
+
+Block production, exits and slashing on an old rollup come from L1 and need
+nothing extra. Its sequencers' attestations only come from a node running that
+rollup's software, so while it runs, add a `previousRollupNode` block to the
+network's `config.json` (testnet has one for V5). The deploy then also starts the
+`<network>-previous` profile: `aztec-node-<network>-previous` and a stats-only
+`indexer-custom-<network>-previous` that writes rows under the old rollup's
+address. Remove the block once the rollup stops producing blocks; the next deploy
+stops both containers.
 
 ## Resource notes
 
 Two nodes on one `cx53` (16 vCPU / 32 GB) alongside 2× Postgres, 2× Redis, 2× web
 and the indexers is the tightest part of this setup: the memory limits above
-account for 14 GB before anything else starts. If the host comes under pressure,
+account for 14 GB before anything else starts — 20 GB while testnet also runs a
+`previousRollupNode`, which is the first thing to drop under pressure. If the host comes under pressure,
 the first lever is dropping the testnet node (remove `testnet` from
 `dashtec_networks` and point testnet's `aztecNode.url` at an external RPC), and
 the second is moving the nodes to a dedicated server.

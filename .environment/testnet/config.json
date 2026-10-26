@@ -25,6 +25,19 @@
     "maxOldSpaceSizeMb": 4096,
     "memLimit": "6g"
   },
+  "previousRollupNode": {
+    "rollupAddress": "0xd73a91bdcf6891c7642f3e460036e1ef2cc23178",
+    "url": "http://aztec-node-testnet-previous:8080",
+    "image": "aztecprotocol/aztec:5.2.1@sha256:7e06be07547e320e0b5ce859a26fe72fc851e686cc8f18216592259e0054a793",
+    "network": "testnet",
+    "p2pPort": 40501,
+    "syncMode": "snapshot",
+    "archiverSkipHistoricalLogsCheck": true,
+    "sentinelHistoryLengthInEpochs": 24,
+    "maxOldSpaceSizeMb": 4096,
+    "memLimit": "6g",
+    "_comment": "V5 kept producing blocks after V6 became canonical, and only a node running V5 software can report its sequencers' attestations. This runs that node plus a stats-only indexer-custom (profile <network>-previous) for rollupAddress. Remove the block once that rollup stops producing blocks."
+  },
   "contracts": {
     "rollupAddress": "0x1f435a7f2da358caf887a470faeee7d5d5f4efba",
     "rollupLabel": "V6.2",

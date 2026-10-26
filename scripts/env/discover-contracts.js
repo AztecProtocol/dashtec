@@ -20,7 +20,7 @@
  * `stakingRegistryAddress` is not part of the Aztec core deployment and is left
  * untouched.
  *
- * No dependencies — this runs under a bare `node:20-alpine` during deploys, the
+ * No dependencies — this runs under a bare `node:24.22.1-alpine` during deploys, the
  * same way scripts/env/propagate-all.js does.
  *
  * Usage: node scripts/env/discover-contracts.js <mainnet|testnet>

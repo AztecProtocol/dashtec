@@ -33,7 +33,7 @@
     cmd: >-
       docker run --rm --network dashtec_default
       -v {{ app_dir }}:/app -w /app
-      node:20-alpine node scripts/env/discover-contracts.js {{ item }}
+      node:24.22.1-alpine node scripts/env/discover-contracts.js {{ item }}
     chdir: "{{ app_dir }}"
   loop: "{{ dashtec_networks }}"
   changed_when: true
