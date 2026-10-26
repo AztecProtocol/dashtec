@@ -37,6 +37,10 @@ const ZERO = '0x0000000000000000000000000000000000000000';
 // are stable across V5 (IStaking.getSlasher, Slasher.PROPOSER).
 const SELECTOR_GET_SLASHER = '0xd0c80f13';
 const SELECTOR_PROPOSER = '0xbffa7f0f';
+// Registry.numberOfVersions(), getVersion(uint256), getRollup(uint256).
+const SELECTOR_NUMBER_OF_VERSIONS = '0x5a4ce7ba';
+const SELECTOR_GET_VERSION = '0xb88da759';
+const SELECTOR_GET_ROLLUP = '0xdd1583c2';
 
 const network = process.argv[2];
 if (!network || !['mainnet', 'testnet'].includes(network)) {
@@ -389,9 +393,10 @@ delete config.contracts.slashFactoryAddress;
 
 // On-chain rollup versions are config hashes (2914217885), and registry indices
 // differ per network, so neither reads as the "V6" people call it. Our node runs
-// the software for the current rollup, so its major version is the name. Only
-// set when the rollup changes (or has no label yet): a node patch release for
-// the same rollup must not rename it.
+// the software for the current rollup, so its major version is the name; a
+// network can redeploy several rollups on one major (testnet had three on V6),
+// so later ones become V6.1, V6.2. Labels are only assigned to a rollup that
+// has none: a node patch release for the same rollup must not rename it.
 let nodeMajor = null;
 try {
   const nodeVersion = String(await rpc(nodeUrl, 'node_getNodeVersion', []));
@@ -399,36 +404,116 @@ try {
 } catch (error) {
   console.warn(`  ⚠ Could not read the node version (${error.message}); rollup label left as is`);
 }
-const rollupChanged = String(before.rollupAddress ?? '').toLowerCase() !== discovered.rollupAddress;
-if (nodeMajor && (rollupChanged || !before.rollupLabel)) {
-  discovered.rollupLabel = `V${nodeMajor}`;
-} else if (rollupChanged) {
-  delete config.contracts.rollupLabel;
+
+const committedRollup = String(before.rollupAddress ?? '').toLowerCase();
+const rollupChanged = committedRollup !== discovered.rollupAddress;
+const previousRollups = (config.contracts.previousRollups ?? []).map((rollup) => ({
+  ...rollup,
+  rollupAddress: rollup.rollupAddress.toLowerCase(),
+}));
+
+// The committed label stays taken whether its rollup is current or now previous.
+const usedLabels = [
+  ...previousRollups.map((rollup) => rollup.label),
+  before.rollupLabel,
+].filter(Boolean);
+const majorOf = (label) => /^V(\d+)(?:\.\d+)?$/.exec(label ?? '')?.[1] ?? null;
+function nextLabel(major) {
+  const taken = usedLabels.filter((label) => majorOf(label) === major).length;
+  const label = taken === 0 ? `V${major}` : `V${major}.${taken}`;
+  usedLabels.push(label);
+  return label;
+}
+
+/** Rollup.getSlasher() then Slasher.PROPOSER(), or null when L1 will not say. */
+async function slashingProposerOf(rollupAddress) {
+  try {
+    const slasherOf = addressFromWord(await l1Rpc('eth_call', [{ to: rollupAddress, data: SELECTOR_GET_SLASHER }, 'latest']));
+    return requireAddress(
+      addressFromWord(await l1Rpc('eth_call', [{ to: slasherOf, data: SELECTOR_PROPOSER }, 'latest'])),
+      `slashing proposer of ${rollupAddress}`,
+    );
+  } catch (error) {
+    console.warn(`  ⚠ Could not read the slashing proposer of ${rollupAddress} (${error.message})`);
+    return null;
+  }
+}
+
+/** Every rollup the registry has registered, oldest first. */
+async function registryRollups(registryAddress) {
+  const uint = (n) => BigInt(n).toString(16).padStart(64, '0');
+  const count = Number(BigInt(await l1Rpc('eth_call', [{ to: registryAddress, data: SELECTOR_NUMBER_OF_VERSIONS }, 'latest'])));
+  const rollups = [];
+  for (let i = 0; i < count; i++) {
+    const version = await l1Rpc('eth_call', [{ to: registryAddress, data: `${SELECTOR_GET_VERSION}${uint(i)}` }, 'latest']);
+    rollups.push(addressFromWord(await l1Rpc('eth_call', [{ to: registryAddress, data: `${SELECTOR_GET_ROLLUP}${version.slice(2)}` }, 'latest'])));
+  }
+  return rollups;
 }
 
 // The registry moving to a new rollup does not move every validator with it:
-// those who staked against the old instance stay there until they exit, and
-// their withdrawals are emitted by the old rollup. Keep each superseded rollup
-// (with the start block it was indexed from) so Ponder goes on watching it.
-const previousRollupAddress = String(before.rollupAddress ?? '').toLowerCase();
-const previousRollups = [...(config.contracts.previousRollups ?? [])];
-if (
-  /^0x[0-9a-f]{40}$/.test(previousRollupAddress) &&
-  previousRollupAddress !== ZERO &&
-  previousRollupAddress !== discovered.rollupAddress &&
-  !previousRollups.some((rollup) => rollup.rollupAddress.toLowerCase() === previousRollupAddress)
-) {
-  const previousStart = cachedStartBlocks.rollup ?? config.ponder?.startBlock;
-  if (Number.isInteger(previousStart) && previousStart > 0) {
-    previousRollups.push({
-      rollupAddress: previousRollupAddress,
-      startBlock: previousStart,
-      ...(before.rollupLabel ? { label: before.rollupLabel } : {}),
-    });
-    console.log(`  + previousRollups             ${previousRollupAddress} (from block ${previousStart})`);
-  } else {
-    console.warn(`  ⚠ ${previousRollupAddress} was replaced but has no start block — not keeping it indexed`);
+// those who staked against the old instance stay there - and on testnet V5 kept
+// producing blocks for weeks after V6 replaced it. Keep each superseded rollup
+// (and its slashing proposer) indexed. That includes rollups the registry moved
+// through between two of our deploys: testnet went V6 -> V6.1 -> V6.2 while we
+// were not deploying, and V6.1 was never indexed at all.
+if (rollupChanged && /^0x[0-9a-f]{40}$/.test(committedRollup) && committedRollup !== ZERO) {
+  let superseded = [committedRollup];
+  try {
+    const all = await registryRollups(discovered.registryAddress);
+    const from = all.indexOf(committedRollup);
+    const to = all.indexOf(discovered.rollupAddress);
+    if (from !== -1 && to > from) superseded = all.slice(from, to);
+  } catch (error) {
+    console.warn(`  ⚠ Could not list the registry's rollups (${error.message}); keeping only ${committedRollup}`);
   }
+
+  // A rollup between two of the same major ran that major too; between majors
+  // there is no telling, so it goes unlabelled rather than guessed.
+  const committedMajor = majorOf(before.rollupLabel);
+  for (const address of superseded) {
+    if (previousRollups.some((rollup) => rollup.rollupAddress === address)) continue;
+
+    const isCommitted = address === committedRollup;
+    let rollupStart = isCommitted ? (cachedStartBlocks.rollup ?? config.ponder?.startBlock) : null;
+    if (!isCommitted) {
+      try {
+        rollupStart = await findDeploymentBlock(address);
+      } catch (error) {
+        console.warn(`  ⚠ Could not find where ${address} was deployed (${error.message})`);
+      }
+    }
+    if (!Number.isInteger(rollupStart) || rollupStart <= 0) {
+      console.warn(`  ⚠ ${address} was replaced but has no start block — not keeping it indexed`);
+      continue;
+    }
+
+    const label = isCommitted
+      ? before.rollupLabel
+      : (committedMajor && committedMajor === nodeMajor ? nextLabel(committedMajor) : undefined);
+    const proposer = isCommitted ? String(before.slashingProposerAddress ?? '').toLowerCase() : await slashingProposerOf(address);
+
+    previousRollups.push({
+      rollupAddress: address,
+      startBlock: rollupStart,
+      ...(proposer && proposer !== ZERO ? { slashingProposerAddress: proposer } : {}),
+      ...(label ? { label } : {}),
+    });
+    console.log(`  + previousRollups             ${address} (from block ${rollupStart}${label ? `, ${label}` : ''})`);
+  }
+}
+
+// Older entries were written before proposers were recorded.
+for (const rollup of previousRollups) {
+  if (rollup.slashingProposerAddress) continue;
+  const proposer = await slashingProposerOf(rollup.rollupAddress);
+  if (proposer) rollup.slashingProposerAddress = proposer;
+}
+
+if (nodeMajor && (rollupChanged || !before.rollupLabel)) {
+  discovered.rollupLabel = nextLabel(nodeMajor);
+} else if (rollupChanged) {
+  delete config.contracts.rollupLabel;
 }
 
 config.contracts = {

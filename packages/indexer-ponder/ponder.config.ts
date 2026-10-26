@@ -71,14 +71,23 @@ export default createConfig({
      * Slashing Proposer Contract
      * Upstream name in Aztec V5 is `SlashingProposer`; V4's Empire-flavoured
      * slashing proposer was deleted, so only this tally-based ABI is registered
-     * against SLASHING_PROPOSER_CONTRACT_ADDRESS.
+     * against SLASHING_PROPOSER_CONTRACT_ADDRESS, plus each previous rollup's
+     * proposer: a replaced rollup can keep producing blocks, and slashing.
      * Events: VoteCast, RoundExecuted, Slashed
      */
     TallySlashingProposer: {
       chain: config.NETWORK_TYPE,
-      address: config.SLASHING_PROPOSER_CONTRACT_ADDRESS as `0x${string}`,
+      address: [
+        config.SLASHING_PROPOSER_CONTRACT_ADDRESS as `0x${string}`,
+        ...config.PREVIOUS_ROLLUPS.flatMap((rollup) => rollup.slashingProposer ? [rollup.slashingProposer] : []),
+      ],
       abi: TallySlashingProposerABI,
-      startBlock: config.START_BLOCK_SLASHING_PROPOSER ?? config.START_BLOCK,
+      // Each previous proposer was deployed with its rollup, so its rollup's
+      // start block covers it.
+      startBlock: Math.min(
+        config.START_BLOCK_SLASHING_PROPOSER ?? config.START_BLOCK,
+        ...config.PREVIOUS_ROLLUPS.filter((rollup) => rollup.slashingProposer).map((rollup) => rollup.startBlock),
+      ),
     },
 
     /**

@@ -5,7 +5,7 @@ import { tallyVoteCast } from 'ponder:schema';
 // import { syncVoteCast } from '../../sync/tally-slashing';
 import { computeEpochFromSlot } from '../../sync/tally-slashing/service';
 import { logBlockHash } from '../../lib/block-hash';
-import { config } from '../../config';
+import { rollupForSlashingProposer } from '../../config';
 
 /**
  * Handle VoteCast event from TallySlashingProposer contract
@@ -18,7 +18,8 @@ ponder.on('TallySlashingProposer:VoteCast', async ({ event, context }) => {
 
   const proposerAddress = normalizeAddress(proposer);
   const contractAddress = normalizeAddress(event.log.address);
-  const epochNumber = await computeEpochFromSlot(context.client, slot);
+  const rollupAddress = rollupForSlashingProposer(contractAddress);
+  const epochNumber = await computeEpochFromSlot(context.client, slot, rollupAddress);
 
   // Insert into Ponder database
   await db.insert(tallyVoteCast).values({
@@ -29,7 +30,7 @@ ponder.on('TallySlashingProposer:VoteCast', async ({ event, context }) => {
     block_number: event.block.number.toString(),
     transaction_hash: event.transaction.hash,
     log_index: event.log.logIndex.toString(),
-    rollup_address: config.ROLLUP_CONTRACT_ADDRESS as `0x${string}`,
+    rollup_address: rollupAddress,
     epoch_number: epochNumber,
     timestamp: event.block.timestamp,
     contract_address: contractAddress,

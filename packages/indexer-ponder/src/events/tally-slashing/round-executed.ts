@@ -6,7 +6,7 @@ import { getTally } from '../../sync/tally-slashing/service';
 // import { syncRoundExecuted, syncTallySlashTargetCommittees, syncTallySlashActions } from '../../sync/tally-slashing';
 import { eq } from 'ponder';
 import { logBlockHash } from '../../lib/block-hash';
-import { config } from '../../config';
+import { rollupForSlashingProposer } from '../../config';
 
 ponder.on('TallySlashingProposer:RoundExecuted', async ({ event, context }) => {
   const { round, slashCount } = event.args;
@@ -14,8 +14,9 @@ ponder.on('TallySlashingProposer:RoundExecuted', async ({ event, context }) => {
   await logBlockHash(db, event);
 
   const contractAddress = normalizeAddress(event.log.address);
+  const rollupAddress = rollupForSlashingProposer(contractAddress);
 
-  const tallyData = await getTally(context.client, Number(round), db, event.transaction.hash);
+  const tallyData = await getTally(context.client, Number(round), db, event.transaction.hash, contractAddress as `0x${string}`);
 
   // Serialize tally results and committees as JSON for materializer
   const tallyResultsJson = tallyData.tallyResults.length > 0
@@ -26,8 +27,12 @@ ponder.on('TallySlashingProposer:RoundExecuted', async ({ event, context }) => {
     : null;
 
   // Count votes for this round from Ponder DB
+  // Round numbers restart with every proposer, so match the proposer too.
   const votesForRound = await db.sql.query.tallyVoteCast.findMany({
-    where: (table, { eq }) => eq(table.round_number, Number(round)),
+    where: (table, { eq, and }) => and(
+      eq(table.round_number, Number(round)),
+      eq(table.contract_address, contractAddress as `0x${string}`),
+    ),
   });
 
   await db.insert(tallyRoundExecuted).values({
@@ -37,7 +42,7 @@ ponder.on('TallySlashingProposer:RoundExecuted', async ({ event, context }) => {
     block_number: event.block.number.toString(),
     transaction_hash: event.transaction.hash,
     log_index: event.log.logIndex.toString(),
-    rollup_address: config.ROLLUP_CONTRACT_ADDRESS as `0x${string}`,
+    rollup_address: rollupAddress,
     payload_address: tallyData.payloadAddress as `0x${string}` | null,
     total_slash_amount: tallyData.totalSlashAmount,
     vote_count: votesForRound.length,

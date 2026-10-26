@@ -14,12 +14,13 @@ const calculateTotalSlashAmount = (tallyResults: readonly TallyResult[]): string
 
 export async function computeEpochFromSlot(
   client: IndexingFunctionArgs['context']['client'],
-  slotNumber: bigint
+  slotNumber: bigint,
+  rollupAddress: `0x${string}` = config.ROLLUP_CONTRACT_ADDRESS as `0x${string}`
 ): Promise<bigint | null> {
   try {
     // Note: Ponder client caches automatically, so we don't need explicit cache wrapper
     const slotsPerEpoch = await client.readContract({
-      address: config.ROLLUP_CONTRACT_ADDRESS as `0x${string}`,
+      address: rollupAddress,
       abi: RollupABI,
       functionName: 'getEpochDuration',
     });
@@ -33,11 +34,12 @@ export async function computeEpochFromSlot(
 
 async function getSlashTargetCommittees(
   client: IndexingFunctionArgs['context']['client'],
-  roundNumber: number
+  roundNumber: number,
+  proposerAddress: `0x${string}`
 ): Promise<readonly (readonly `0x${string}`[])[]> {
   try {
     return await client.readContract({
-      address: config.SLASHING_PROPOSER_CONTRACT_ADDRESS as `0x${string}`,
+      address: proposerAddress,
       abi: TallySlashingProposerABI,
       functionName: 'getSlashTargetCommittees',
       args: [BigInt(roundNumber)],
@@ -48,12 +50,14 @@ async function getSlashTargetCommittees(
   }
 }
 
-// Tries contract first (only works within ROUNDABOUT_SIZE window), always falls back to DB
+// Tries contract first (only works within ROUNDABOUT_SIZE window), always falls back to DB.
+// proposerAddress is the proposer that executed the round; every rollup version has its own.
 export async function getTally(
   client: IndexingFunctionArgs['context']['client'],
   roundNumber: number,
   db: IndexingFunctionArgs['context']['db'],
-  transactionHash: string
+  transactionHash: string,
+  proposerAddress: `0x${string}` = config.SLASHING_PROPOSER_CONTRACT_ADDRESS as `0x${string}`
 ): Promise<{
   committees: readonly (readonly `0x${string}`[])[];
   tallyResults: TallyResult[];
@@ -65,9 +69,9 @@ export async function getTally(
 
   // Try contract first
   try {
-    committees = await getSlashTargetCommittees(client, roundNumber);
+    committees = await getSlashTargetCommittees(client, roundNumber, proposerAddress);
     const contractTally = await client.readContract({
-      address: config.SLASHING_PROPOSER_CONTRACT_ADDRESS as `0x${string}`,
+      address: proposerAddress,
       abi: TallySlashingProposerABI,
       functionName: 'getTally',
       args: [BigInt(roundNumber), committees],
@@ -105,7 +109,7 @@ export async function getTally(
   }
 
   const totalSlashAmount = calculateTotalSlashAmount(tallyResults);
-  const payloadAddress = tallyResults.length > 0 ? await getPayloadAddress(client, roundNumber, tallyResults) : null;
+  const payloadAddress = tallyResults.length > 0 ? await getPayloadAddress(client, roundNumber, tallyResults, proposerAddress) : null;
 
   return {
     committees,
@@ -118,11 +122,12 @@ export async function getTally(
 async function getPayloadAddress(
   client: IndexingFunctionArgs['context']['client'],
   roundNumber: number,
-  tallyResults: readonly TallyResult[]
+  tallyResults: readonly TallyResult[],
+  proposerAddress: `0x${string}`
 ): Promise<string | null> {
   try {
     const address = (await client.readContract({
-      address: config.SLASHING_PROPOSER_CONTRACT_ADDRESS as `0x${string}`,
+      address: proposerAddress,
       abi: TallySlashingProposerABI,
       functionName: 'getPayloadAddress',
       args: [BigInt(roundNumber), tallyResults],

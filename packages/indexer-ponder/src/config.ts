@@ -34,16 +34,22 @@ const configSchema = z.object({
   START_BLOCK_GOVERNANCE: z.string().transform(Number).optional(),
   START_BLOCK_GOVERNANCE_PROPOSER: z.string().transform(Number).optional(),
   START_BLOCK_STAKING_REGISTRY: z.string().transform(Number).optional(),
-  // Rollups the registry has moved past, as "address:startBlock" pairs. Their
-  // validators keep exiting after an upgrade, so they stay indexed alongside the
-  // current one; written by discover-contracts.js when the rollup changes.
+  // Rollups the registry has moved past, as "address:startBlock[:slashingProposer]"
+  // entries. Their validators keep exiting after an upgrade - and an old rollup
+  // can keep producing blocks and slashing for weeks - so they stay indexed
+  // alongside the current one; written by discover-contracts.js.
   PREVIOUS_ROLLUPS: z.string().default('').transform((val) =>
     val.split(',').map((entry) => entry.trim()).filter(Boolean).map((entry) => {
-      const [address, startBlock] = entry.split(':');
-      if (!/^0x[a-fA-F0-9]{40}$/.test(address ?? '') || !/^\d+$/.test(startBlock ?? '')) {
+      const [address, startBlock, slashingProposer] = entry.split(':');
+      const isAddress = (value?: string) => /^0x[a-fA-F0-9]{40}$/.test(value ?? '');
+      if (!isAddress(address) || !/^\d+$/.test(startBlock ?? '') || (slashingProposer && !isAddress(slashingProposer))) {
         throw new Error(`Invalid PREVIOUS_ROLLUPS entry: ${entry}`);
       }
-      return { address: address.toLowerCase() as `0x${string}`, startBlock: Number(startBlock) };
+      return {
+        address: address.toLowerCase() as `0x${string}`,
+        startBlock: Number(startBlock),
+        slashingProposer: slashingProposer?.toLowerCase() as `0x${string}` | undefined,
+      };
     })
   ),
   NETWORK_TYPE: z.string(),
@@ -71,3 +77,10 @@ export const config = new Proxy({} as Config, {
     return lazyConfig[prop as keyof typeof lazyConfig];
   }
 });
+
+/** The rollup a slashing proposer belongs to; each rollup version has its own. */
+export function rollupForSlashingProposer(proposer: string): `0x${string}` {
+  const address = proposer.toLowerCase();
+  const previous = config.PREVIOUS_ROLLUPS.find((rollup) => rollup.slashingProposer === address);
+  return (previous?.address ?? config.ROLLUP_CONTRACT_ADDRESS) as `0x${string}`;
+}
