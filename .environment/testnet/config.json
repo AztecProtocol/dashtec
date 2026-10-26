@@ -16,7 +16,7 @@
   },
   "aztecNode": {
     "url": "http://aztec-node-testnet:8080",
-    "image": "azteclabs/aztec:6.0.0-rc.1@sha256:97e2db7dde9f5730bbd3734a094500be9b4f9945325fa862aa7d15a5d18ccfb1",
+    "image": "azteclabs/aztec:6.0.0@sha256:59b10cc8e89bb9226db1f771a5abbe5d5f8d71483c00c7472187e6ddc7adab8d",
     "network": "testnet",
     "p2pPort": 40500,
     "syncMode": "snapshot",
@@ -26,11 +26,11 @@
     "memLimit": "6g"
   },
   "contracts": {
-    "rollupAddress": "0x8c2fb2a68a3d362ab1de99e06f83f8903160bbd9",
-    "rollupLabel": "V6",
+    "rollupAddress": "0x1f435a7f2da358caf887a470faeee7d5d5f4efba",
+    "rollupLabel": "V6.2",
     "governanceAddress": "0xcaf7447721447b22cd0076ac7c63877c3afd329f",
     "governanceProposerAddress": "0x01c7d4ca153748d2377968fef22894cb162e9480",
-    "slashingProposerAddress": "0xb7d4e1aeed9238576299cf3e2556e7e14c38c386",
+    "slashingProposerAddress": "0x11e38cff51ee20142eb1ebb9bd0a3f7934aa9b65",
     "gseAddress": "0xb6a38a51a6c1de9012f9d8ea9745ef957212eaac",
     "stakingRegistryAddress": "0xC6EcC1832c8BF6a41c927BEb4E9ec610FBeDd1C2",
     "registryAddress": "0xa0bfb1b494fb49041e5c6e8c2c1be09cd171c6ba",
@@ -38,7 +38,20 @@
       {
         "rollupAddress": "0xd73a91bdcf6891c7642f3e460036e1ef2cc23178",
         "startBlock": 11250166,
-        "label": "V5"
+        "label": "V5",
+        "slashingProposerAddress": "0x504331248eb1359c247a0e6895fffea70ecdb9a8"
+      },
+      {
+        "rollupAddress": "0x8c2fb2a68a3d362ab1de99e06f83f8903160bbd9",
+        "startBlock": 11785332,
+        "slashingProposerAddress": "0xb7d4e1aeed9238576299cf3e2556e7e14c38c386",
+        "label": "V6"
+      },
+      {
+        "rollupAddress": "0xed1eb2eb670b42e2fb5a478c076a264b9604089d",
+        "startBlock": 11883750,
+        "slashingProposerAddress": "0x05d6cb9cb44c62405db1661cf97e5c9e695eba70",
+        "label": "V6.1"
       }
     ],
     "_comment": "Verified against the Aztec node on every deploy by `pnpm env:discover testnet` and rewritten if the chain disagrees. Committed rather than zeroed so the deploy can skip the ~25-call deployment-block search per contract. slashingProposerAddress is derived on-chain each run (Rollup.getSlasher -> Slasher.PROPOSER). stakingRegistryAddress is not part of the Aztec core deployment and is not discovered."
@@ -77,17 +90,17 @@
   "ponder": {
     "port": 42069,
     "maxHealthcheckDuration": 240,
-    "startBlock": 11785332,
+    "startBlock": 11969225,
     "startBlocks": {
-      "governance": 9500000,
-      "governanceProposer": 9500000,
+      "rollup": 11969225,
+      "slashingProposer": 11969225,
       "gse": 9500000,
       "registry": 9500000,
-      "rollup": 11785332,
-      "slashingProposer": 11785332,
+      "governance": 9500000,
+      "governanceProposer": 9500000,
       "stakingRegistry": 9500000
     },
-    "_comment": "startBlock/startBlocks are verified by `pnpm env:discover testnet` and only re-derived when a contract address changes. Survivor blocks are the historical 9500000 floor rather than measured deployments \u2014 correct but wasteful; see contracts._comment."
+    "_comment": "startBlock/startBlocks are verified by `pnpm env:discover testnet` and only re-derived when a contract address changes. Survivor blocks are the historical 9500000 floor rather than measured deployments — correct but wasteful; see contracts._comment."
   },
   "app": {
     "url": "https://testnet.dashtec.xyz",
