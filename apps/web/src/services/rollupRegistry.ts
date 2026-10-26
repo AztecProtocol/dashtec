@@ -56,7 +56,29 @@ export async function getRollupRegistry(): Promise<RollupRegistry> {
       versions[i].endBlock = versions[i + 1].startBlock;
     }
 
-    cachedRegistry = { versions, activeAddress: active.address };
+    // A deploy points the collectors at the new rollup the moment it lands, but
+    // this table only learns of it once Ponder has re-indexed up to its
+    // CanonicalRollupUpdated event - hours, on a fresh index - and until then
+    // every validator was already tagged with a rollup no view would show, so
+    // the registry read empty. A configured rollup this table has never seen is
+    // newer than everything in it, so treat it as active. One that is merely
+    // behind the registry is in the table and does not override it.
+    const configured = getEnv().ROLLUP_CONTRACT_ADDRESS.toLowerCase();
+    if (!versions.some((version) => version.address === configured)) {
+      active.deprecated = true;
+      versions.push({
+        address: configured,
+        label: labels.get(configured) ?? 'latest',
+        // Its switch block is not known yet; starting from its predecessor's
+        // keeps block-range filters from hiding its first events.
+        startBlock: active.startBlock,
+        endBlock: null,
+        deprecated: false,
+      });
+      cachedRegistry = { versions, activeAddress: configured };
+    } else {
+      cachedRegistry = { versions, activeAddress: active.address };
+    }
   } else {
     const env = getEnv();
     cachedRegistry = {
