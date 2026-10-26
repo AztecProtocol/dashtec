@@ -48,6 +48,18 @@ export class ReorgDetector {
 
     // Ponder regressed below our cache — likely reorg
     if (ponderMax < lastCached) {
+      // A deploy that changes Ponder's config or handlers makes it re-index from
+      // scratch, so its max block drops by millions. Treating that as a reorg
+      // deleted every row past it and left the site empty until Ponder caught
+      // up again - testnet's registry read zero for most of an hour. No
+      // Ethereum reorg is deeper than the hash cache, so a deeper drop is a
+      // re-index: rewind the cursors (re-indexing can add events below them,
+      // e.g. a newly indexed contract) but keep the rows, which stay valid.
+      const depth = lastCached - ponderMax;
+      if (depth > CACHE_DEPTH) {
+        logger.warn(`Ponder regressed by ${depth} blocks (cached ${lastCached}, now ${ponderMax}): re-index, rewinding without deleting rows`);
+        return await this.handleReorg(ponderMax, materializers, { keepRows: true });
+      }
       logger.warn(`Ponder regressed: cached up to ${lastCached}, now at ${ponderMax}`);
       return await this.handleReorg(ponderMax, materializers);
     }
@@ -86,13 +98,17 @@ export class ReorgDetector {
   }
 
   /** Handle a confirmed reorg — reset materializers and invalidate cache. */
-  private async handleReorg(reorgBlock: bigint, materializers: BaseMaterializer[]): Promise<boolean> {
+  private async handleReorg(
+    reorgBlock: bigint,
+    materializers: BaseMaterializer[],
+    { keepRows = false }: { keepRows?: boolean } = {},
+  ): Promise<boolean> {
     logger.warn(`Reorg detected at block ${reorgBlock} (hash mismatch between Ponder and cache)`);
     const resetBlock = reorgBlock - SAFETY_MARGIN;
 
     for (const mat of materializers) {
-      await mat.resetToBlock(resetBlock.toString());
-      logger.warn(`Reset materializer ${mat.id} to block ${resetBlock}`);
+      await mat.resetToBlock(resetBlock.toString(), { keepRows });
+      logger.warn(`${keepRows ? 'Rewound' : 'Reset'} materializer ${mat.id} to block ${resetBlock}`);
     }
 
     // Invalidate cache entries at and after the reorg point

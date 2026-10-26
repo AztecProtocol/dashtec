@@ -67,10 +67,15 @@ export abstract class BaseMaterializer {
     return false;
   }
 
-  /** Reset checkpoint to a specific block (used after reorg detection). */
-  async resetToBlock(blockNumber: string): Promise<void> {
-    this.logger.info(`Resetting checkpoint to block ${blockNumber}`);
-    await this.deleteAfterBlock(blockNumber);
+  /**
+   * Reset checkpoint to a specific block (used after reorg detection).
+   * keepRows rewinds without deleting what was materialized past that block:
+   * right for a Ponder re-index, where the chain is unchanged and every write
+   * here is an idempotent upsert, wrong for a real reorg.
+   */
+  async resetToBlock(blockNumber: string, { keepRows = false }: { keepRows?: boolean } = {}): Promise<void> {
+    this.logger.info(`${keepRows ? 'Rewinding' : 'Resetting'} checkpoint to block ${blockNumber}`);
+    if (!keepRows) await this.deleteAfterBlock(blockNumber);
     const remaining = await this.countRemaining();
     await this.checkpointService.resetCheckpoint(this.id, blockNumber, '0', remaining);
     this.totalRows = remaining;
