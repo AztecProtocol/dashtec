@@ -393,10 +393,11 @@ delete config.contracts.slashFactoryAddress;
 
 // On-chain rollup versions are config hashes (2914217885), and registry indices
 // differ per network, so neither reads as the "V6" people call it. Our node runs
-// the software for the current rollup, so its major version is the name; a
-// network can redeploy several rollups on one major (testnet had three on V6),
-// so later ones become V6.1, V6.2. Labels are only assigned to a rollup that
-// has none: a node patch release for the same rollup must not rename it.
+// the software for the current rollup, so its major version is the name. A
+// network can redeploy several rollups on one major (testnet had three on V6);
+// they share the name, and the version picker hides replaced ones nobody is on.
+// Labels are only assigned to a rollup that has none: a node patch release for
+// the same rollup must not rename it.
 let nodeMajor = null;
 try {
   const nodeVersion = String(await rpc(nodeUrl, 'node_getNodeVersion', []));
@@ -412,18 +413,8 @@ const previousRollups = (config.contracts.previousRollups ?? []).map((rollup) =>
   rollupAddress: rollup.rollupAddress.toLowerCase(),
 }));
 
-// The committed label stays taken whether its rollup is current or now previous.
-const usedLabels = [
-  ...previousRollups.map((rollup) => rollup.label),
-  before.rollupLabel,
-].filter(Boolean);
-const majorOf = (label) => /^V(\d+)(?:\.\d+)?$/.exec(label ?? '')?.[1] ?? null;
-function nextLabel(major) {
-  const taken = usedLabels.filter((label) => majorOf(label) === major).length;
-  const label = taken === 0 ? `V${major}` : `V${major}.${taken}`;
-  usedLabels.push(label);
-  return label;
-}
+const majorOf = (label) => /^V(\d+)$/.exec(label ?? '')?.[1] ?? null;
+const labelFor = (major) => `V${major}`;
 
 /** Rollup.getSlasher() then Slasher.PROPOSER(), or null when L1 will not say. */
 async function slashingProposerOf(rollupAddress) {
@@ -490,7 +481,7 @@ if (rollupChanged && /^0x[0-9a-f]{40}$/.test(committedRollup) && committedRollup
 
     const label = isCommitted
       ? before.rollupLabel
-      : (committedMajor && committedMajor === nodeMajor ? nextLabel(committedMajor) : undefined);
+      : (committedMajor && committedMajor === nodeMajor ? labelFor(committedMajor) : undefined);
     const proposer = isCommitted ? String(before.slashingProposerAddress ?? '').toLowerCase() : await slashingProposerOf(address);
 
     previousRollups.push({
@@ -511,7 +502,7 @@ for (const rollup of previousRollups) {
 }
 
 if (nodeMajor && (rollupChanged || !before.rollupLabel)) {
-  discovered.rollupLabel = nextLabel(nodeMajor);
+  discovered.rollupLabel = labelFor(nodeMajor);
 } else if (rollupChanged) {
   delete config.contracts.rollupLabel;
 }

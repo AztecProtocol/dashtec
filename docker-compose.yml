@@ -288,7 +288,7 @@ services:
   # reach it as http://aztec-node-mainnet:8080. P2P is published and must be
   # opened in terraform/hetzner.tf.
   aztec-node-mainnet:
-    image: ${AZTEC_NODE_IMAGE_MAINNET:-aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0}
+    image: ${AZTEC_NODE_IMAGE_MAINNET:-azteclabs/aztec:6.0.0@sha256:59b10cc8e89bb9226db1f771a5abbe5d5f8d71483c00c7472187e6ddc7adab8d}
     container_name: dashtec-aztec-node-mainnet
     command: ["start", "--node"]
     init: true
@@ -344,6 +344,95 @@ services:
         max-file: "3"
     profiles:
       - mainnet
+
+  # Mainnet counterpart of aztec-node-mainnet-previous: V5 keeps producing blocks
+  # after mainnet's move to V6, so while it runs this node and a stats-only
+  # indexer follow it. Enabled by `previousRollupNode` in mainnet's config.json.
+  aztec-node-mainnet-previous:
+    image: ${AZTEC_NODE_IMAGE_MAINNET_PREVIOUS:-aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0}
+    container_name: dashtec-aztec-node-mainnet-previous
+    command: ["start", "--node"]
+    init: true
+    ports:
+      - "${AZTEC_NODE_P2P_PORT_MAINNET_PREVIOUS:-40401}:${AZTEC_NODE_P2P_PORT_MAINNET_PREVIOUS:-40401}/tcp"
+      - "${AZTEC_NODE_P2P_PORT_MAINNET_PREVIOUS:-40401}:${AZTEC_NODE_P2P_PORT_MAINNET_PREVIOUS:-40401}/udp"
+    environment:
+      NETWORK: ${AZTEC_NODE_NETWORK_MAINNET_PREVIOUS:-mainnet}
+      ETHEREUM_HOSTS: ${AZTEC_NODE_ETHEREUM_HOSTS_MAINNET}
+      L1_CONSENSUS_HOST_URLS: ${AZTEC_NODE_L1_CONSENSUS_HOSTS_MAINNET}
+      AZTEC_PORT: 8080
+      AZTEC_ADMIN_PORT: 8880
+      P2P_ENABLED: "true"
+      P2P_PORT: ${AZTEC_NODE_P2P_PORT_MAINNET_PREVIOUS:-40401}
+      P2P_BROADCAST_PORT: ${AZTEC_NODE_P2P_PORT_MAINNET_PREVIOUS:-40401}
+      P2P_QUERY_FOR_IP: "true"
+      SENTINEL_ENABLED: "true"
+      SENTINEL_HISTORY_LENGTH_IN_EPOCHS: ${AZTEC_NODE_SENTINEL_EPOCHS_MAINNET_PREVIOUS:-24}
+      SYNC_MODE: ${AZTEC_NODE_SYNC_MODE_MAINNET_PREVIOUS:-snapshot}
+      ARCHIVER_SKIP_HISTORICAL_LOGS_CHECK: ${AZTEC_NODE_SKIP_HISTORICAL_LOGS_CHECK_MAINNET_PREVIOUS:-false}
+      DATA_DIRECTORY: /data/data
+      CRS_PATH: /data/crs
+      NODE_OPTIONS: --no-warnings --max-old-space-size=${AZTEC_NODE_HEAP_MB_MAINNET_PREVIOUS:-4096}
+      LOG_LEVEL: info
+      LOG_JSON: 1
+    volumes:
+      - aztec_node_data_mainnet_previous:/data/data
+      - aztec_node_crs_mainnet_previous:/data/crs
+    restart: unless-stopped
+    stop_grace_period: 2m
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8080/status').then(r => { if (!r.ok) throw new Error(String(r.status)); process.exit(0); }).catch(() => process.exit(1))"
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30m
+    mem_limit: ${AZTEC_NODE_MEM_LIMIT_MAINNET_PREVIOUS:-8g}
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "3"
+    profiles:
+      - mainnet-previous
+
+  # Stats-only collectors for the previous rollup: everything else (validator
+  # list, providers, migration, prices) is shared and already runs in
+  # indexer-custom (mainnet). Rows it writes carry the previous rollup's address.
+  indexer-custom-mainnet-previous:
+    build:
+      context: .
+      dockerfile: packages/indexer-custom/Dockerfile
+    image: dashtec-indexer-custom:latest
+    container_name: dashtec-indexer-custom-mainnet-previous
+    env_file:
+      - path: packages/indexer-custom/.env.mainnet-previous
+        required: false
+    environment:
+      DATABASE_URL: postgresql://dashtec:dashtec@postgres-mainnet:5432/dashtec
+      DATABASE_READ_REPLICA_URL: postgresql://dashtec:dashtec@postgres-mainnet:5432/dashtec
+      REDIS_URL: redis://:dashtec@redis-mainnet:6379
+      VALIDATOR_STATS_RPC_URL: http://aztec-node-mainnet-previous:8080
+      COLLECTORS: validatorStats,epochAggregates,epochIntegrity
+    depends_on:
+      aztec-node-mainnet-previous:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:4000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    profiles:
+      - mainnet-previous
 
   # Aztec node (testnet). Same shape as mainnet; a distinct P2P port so both can
   # publish on the one host.
@@ -587,3 +676,5 @@ volumes:
   aztec_node_crs_testnet:
   aztec_node_data_testnet_previous:
   aztec_node_crs_testnet_previous:
+  aztec_node_data_mainnet_previous:
+  aztec_node_crs_mainnet_previous:

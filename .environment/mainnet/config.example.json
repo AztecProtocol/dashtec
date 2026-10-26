@@ -16,7 +16,7 @@
   },
   "aztecNode": {
     "url": "http://aztec-node-mainnet:8080",
-    "image": "aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0",
+    "image": "azteclabs/aztec:6.0.0@sha256:59b10cc8e89bb9226db1f771a5abbe5d5f8d71483c00c7472187e6ddc7adab8d",
     "network": "mainnet",
     "p2pPort": 40400,
     "syncMode": "snapshot",

@@ -8,9 +8,10 @@ import type { RollupVersionStats } from '@/types/rollup';
 interface RollupContextValue {
   versions: RollupVersionStats[];
   /**
-   * The versions worth offering in a picker: the active one, plus any with
-   * indexed sequencers, epochs or checkpoints. Testnet's registry also holds
-   * early rollups nothing was ever indexed for.
+   * The versions worth offering in a picker: the active one, plus replaced
+   * ones that still produce blocks or still have sequencers on them. A
+   * replaced rollup everyone has left (testnet's short-lived V6 redeploys,
+   * its early rollups) is history nobody needs to switch to.
    */
   selectableVersions: RollupVersionStats[];
   /** Display name for a rollup address (V5, V6.2), or a short address when unknown. */
@@ -34,8 +35,7 @@ export const RollupProvider = ({ children }: { children: ReactNode }) => {
   const activeRollup = data?.active ?? '';
   const versions = useMemo(() => data?.versions ?? [], [data]);
   const selectableVersions = useMemo(
-    () => versions.filter((v) =>
-      v.address === activeRollup || v.validatorCount > 0 || v.epochCount > 0 || v.lastCheckpointBlock !== null),
+    () => versions.filter((v) => v.address === activeRollup || v.isLive || v.validatorCount > 0),
     [versions, activeRollup],
   );
   const labelFor = useCallback((address: string | null | undefined) => {

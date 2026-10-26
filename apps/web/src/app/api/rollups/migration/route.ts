@@ -42,21 +42,19 @@ export async function GET(request: NextRequest) {
     const registry = await getRollupRegistry();
     const current = registry.versions.find((version) => version.address === registry.activeAddress)!;
 
-    // Offer the same versions as the header picker: ones with sequencers,
-    // epochs or checkpoints indexed. Testnet's early rollups still have
-    // ValidatorRollup rows from old deposits, but nothing else, and are noise.
-    const [validators, epochs, lastCheckpoints] = await Promise.all([
+    // Offer the same versions as the header picker: replaced ones that still
+    // produce blocks or still have sequencers on them.
+    const [validators, lastCheckpoints] = await Promise.all([
       prisma.validator.groupBy({ by: ['rollup_address'], _count: { _all: true } }),
-      prisma.epoch.groupBy({ by: ['rollup_address'], _count: { _all: true } }),
       fetchLastCheckpointBlocks(registry.versions.map((version) => version.address)),
     ]);
-    const populated = new Set([
-      ...[...validators, ...epochs].filter((row) => row._count._all > 0).map((row) => row.rollup_address.toLowerCase()),
-      ...[...lastCheckpoints].filter(([, block]) => block !== null).map(([address]) => address),
-    ]);
+    const withSequencers = new Set(
+      validators.filter((row) => row._count._all > 0).map((row) => row.rollup_address.toLowerCase()),
+    );
     const deprecated = registry.versions
-      .filter((version) => version.deprecated && populated.has(version.address))
-      .map((version) => ({ ...version, isLive: isLiveRollup(version.address, lastCheckpoints) }));
+      .filter((version) => version.deprecated)
+      .map((version) => ({ ...version, isLive: isLiveRollup(version.address, lastCheckpoints) }))
+      .filter((version) => version.isLive || withSequencers.has(version.address));
 
     if (deprecated.length === 0) {
       return NextResponse.json({ migration: null, deprecated: [], status: 'ok' });

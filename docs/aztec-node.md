@@ -210,15 +210,17 @@ the registry moved through since the committed one in `contracts.previousRollups
 of them: validators who never moved still exit through the old rollup, and an old
 rollup can keep producing blocks — testnet's V5 did, for weeks after V6.
 
-Labels come from the node's major version: the first rollup on a major is `V6`,
-later redeployments on the same major are `V6.1`, `V6.2`.
+Labels come from the node's major version (`V5`, `V6`). Redeployments on the same
+major share the label; the version picker hides replaced rollups that have
+stopped and have no sequencers left, so testnet's short-lived V6 redeploys do not
+show up next to the current one.
 
 #### A previous rollup that is still running
 
 Block production, exits and slashing on an old rollup come from L1 and need
 nothing extra. Its sequencers' attestations only come from a node running that
 rollup's software, so while it runs, add a `previousRollupNode` block to the
-network's `config.json` (testnet has one for V5). The deploy then also starts the
+network's `config.json` (mainnet has one for V5). The deploy then also starts the
 `<network>-previous` profile: `aztec-node-<network>-previous` and a stats-only
 `indexer-custom-<network>-previous` that writes rows under the old rollup's
 address. Remove the block once the rollup stops producing blocks; the next deploy
@@ -228,8 +230,8 @@ stops both containers.
 
 Two nodes on one `cx53` (16 vCPU / 32 GB) alongside 2× Postgres, 2× Redis, 2× web
 and the indexers is the tightest part of this setup: the memory limits above
-account for 14 GB before anything else starts — 20 GB while testnet also runs a
-`previousRollupNode`, which is the first thing to drop under pressure. If the host comes under pressure,
+account for 14 GB before anything else starts — 22 GB while mainnet also runs a
+`previousRollupNode` for V5, which is the first thing to drop under pressure. If the host comes under pressure,
 the first lever is dropping the testnet node (remove `testnet` from
 `dashtec_networks` and point testnet's `aztecNode.url` at an external RPC), and
 the second is moving the nodes to a dedicated server.

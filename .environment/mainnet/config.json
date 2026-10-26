@@ -16,7 +16,7 @@
   },
   "aztecNode": {
     "url": "http://aztec-node-mainnet:8080",
-    "image": "aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0",
+    "image": "azteclabs/aztec:6.0.0@sha256:59b10cc8e89bb9226db1f771a5abbe5d5f8d71483c00c7472187e6ddc7adab8d",
     "network": "mainnet",
     "p2pPort": 40400,
     "syncMode": "snapshot",
@@ -25,15 +25,36 @@
     "maxOldSpaceSizeMb": 4096,
     "memLimit": "8g"
   },
-  "contracts": {
+  "previousRollupNode": {
     "rollupAddress": "0x91ff8bbd8ebb07893010d50a48a1609e5ebd8e34",
-    "rollupLabel": "V5",
+    "url": "http://aztec-node-mainnet-previous:8080",
+    "image": "aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0",
+    "network": "mainnet",
+    "p2pPort": 40401,
+    "syncMode": "snapshot",
+    "archiverSkipHistoricalLogsCheck": false,
+    "sentinelHistoryLengthInEpochs": 24,
+    "maxOldSpaceSizeMb": 4096,
+    "memLimit": "8g",
+    "_comment": "V5 keeps producing blocks after V6 became canonical, and only a node running V5 software can report its sequencers' attestations. This runs that node plus a stats-only indexer-custom (profile <network>-previous) for rollupAddress. Remove the block once that rollup stops producing blocks."
+  },
+  "contracts": {
+    "rollupAddress": "0xe37a2663cc9c119ba41572c40fab0bbb23a5402f",
+    "rollupLabel": "V6",
     "governanceAddress": "0x1102471eb3378fee427121c9efcea452e4b6b75e",
     "governanceProposerAddress": "0x06ef1dcf87e419c48b94a331b252819fadbd63ef",
-    "slashingProposerAddress": "0x8a36b8f2ca71d8d8bd98e03ebf8b4d0939daf0ba",
+    "slashingProposerAddress": "0xa2ff1bf784d6b1d7ba1bfd67c3538b85f9f85295",
     "gseAddress": "0xa92ecfd0e70c9cd5e5cd76c50af0f7da93567a4f",
     "stakingRegistryAddress": "0x042dF8f42790d6943F41C25C2132400fd727f452",
     "registryAddress": "0x35b22e09ee0390539439e24f06da43d83f90e298",
+    "previousRollups": [
+      {
+        "rollupAddress": "0x91ff8bbd8ebb07893010d50a48a1609e5ebd8e34",
+        "startBlock": 25428902,
+        "slashingProposerAddress": "0x8a36b8f2ca71d8d8bd98e03ebf8b4d0939daf0ba",
+        "label": "V5"
+      }
+    ],
     "_comment": "Verified against the Aztec node on every deploy by `pnpm env:discover mainnet` and rewritten if the chain disagrees. Committed rather than zeroed so the deploy can skip the ~25-call deployment-block search per contract; a wrong value here is corrected automatically, an absent one costs ~175 RPC calls. stakingRegistryAddress is not part of the Aztec core deployment and is not discovered."
   },
   "collectors": {
@@ -70,14 +91,14 @@
   "ponder": {
     "port": 42069,
     "maxHealthcheckDuration": 240,
-    "startBlock": 25428902,
+    "startBlock": 26160102,
     "startBlocks": {
       "governance": 23786829,
       "governanceProposer": 23786828,
       "gse": 23786826,
       "registry": 23786827,
-      "rollup": 25428902,
-      "slashingProposer": 25428902,
+      "rollup": 26160102,
+      "slashingProposer": 26160102,
       "stakingRegistry": 23786843
     },
     "_comment": "startBlock and startBlocks are set by `pnpm env:discover mainnet`. A rollup upgrade redeploys only the rollup and its slashing proposer; the GSE, registry, governance, governance proposer and staking registry keep their addresses, so each is indexed from its own deployment block. Indexing them all from the new rollup discards their earlier events."
