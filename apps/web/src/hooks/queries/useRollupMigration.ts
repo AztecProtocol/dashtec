@@ -29,7 +29,7 @@ export interface RemainingValidator {
 }
 
 export interface RollupMigration {
-  from: { address: string; label: string };
+  from: { address: string; label: string; isLive: boolean };
   to: { address: string; label: string; isCurrent: boolean };
   upgradedAt: { blockNumber: string; timestamp: number | null } | null;
   summary: Record<'migrated' | 'active' | 'exiting' | 'exited', MigrationBucketTotals>;
@@ -45,7 +45,7 @@ export interface RollupMigration {
 
 interface RollupMigrationResponse {
   migration: RollupMigration | null;
-  deprecated: { address: string; label: string }[];
+  deprecated: { address: string; label: string; isLive: boolean }[];
 }
 
 export interface RollupMigrationParams {

@@ -3,6 +3,7 @@ import { Validator, ValidatorEpochPerformanceData } from '@/types';
 import { logError } from '@/services/error/errorLogger';
 import { createBenchmark } from '@/services/benchmark';
 import { parseRollupParam } from '@/lib/rollupParam';
+import { getActiveRollupAddress, isValidRollupAddress } from '@/services/rollupRegistry';
 import { getValidatorRewards } from '@/services/rewards/validatorRewards';
 import { fetchValidatorWithPerformance, fetchMigrationStatus, fetchProviderForValidator, checkValidatorInQueue } from '@/services/validator/validatorDetail';
 import { fetchProposalHistory, fetchAttestationHistory, fetchGovernanceVotingHistory, fetchTallyVotingHistory } from '@/services/validator/validatorHistory';
@@ -18,7 +19,7 @@ export async function GET(
 
   const { validatorHexIndex: identifier } = await params;
   const { searchParams } = new URL(request.url);
-  const rollupAddresses = await parseRollupParam(searchParams);
+  let rollupAddresses = await parseRollupParam(searchParams);
   const startEpoch = searchParams.get('startEpoch');
   const endEpoch = searchParams.get('endEpoch');
 
@@ -33,12 +34,25 @@ export async function GET(
 
     // Core validator data
     benchmark.start('fetchValidator');
-    const validatorData = await fetchValidatorWithPerformance(identifier, rollupAddresses, epochFilter);
-    benchmark.end('fetchValidator');
+    let validatorData = await fetchValidatorWithPerformance(identifier, rollupAddresses, epochFilter);
 
     if (!validatorData) {
       return NextResponse.json({ error: 'Sequencer not found.' }, { status: 404 });
     }
+
+    // A sequencer that never moved to the current rollup has all its activity
+    // on the one it is still on; scoping to the current rollup would show an
+    // empty page. Unless a version was asked for, show its own.
+    const ownRollup = validatorData.rollup_address.toLowerCase();
+    if (
+      !searchParams.get('rollup') &&
+      ownRollup !== await getActiveRollupAddress() &&
+      await isValidRollupAddress(ownRollup)
+    ) {
+      rollupAddresses = [ownRollup];
+      validatorData = (await fetchValidatorWithPerformance(identifier, rollupAddresses, epochFilter))!;
+    }
+    benchmark.end('fetchValidator');
 
     const address = validatorData.address;
 
@@ -121,6 +135,7 @@ export async function GET(
       provider: provider ?? undefined,
       migrationStatus,
       journey,
+      rollupAddress: ownRollup,
     };
 
     const { total, details } = benchmark.getResults();

@@ -21,6 +21,7 @@ import { useApp } from '@/context/AppContext';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { useNotification } from '@/context/NotificationContext';
 import { useStatusColor } from '@/hooks/useStatusColor';
+import { RollupVersionTag } from '@/components/ui/RollupVersionTag';
 
 const PerformanceCell: React.FC<{ rate: string | undefined; volume: string; }> = ({ rate, volume }) => {
   const rateValue = rate ? parseFloat(rate) : 0;
@@ -207,12 +208,15 @@ export const ValidatorTableRow: React.FC<{
 
       {/* Status */}
       <td className="px-6 py-4 whitespace-nowrap text-sm">
-        <Tooltip content={getValidatorStatusDescription(validator.status || '')}>
-          <span className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md cursor-help capitalize ${textClass}`}>
-            <span className={`w-2 h-2 rounded-full ${dotClass}`}></span>
-            {displayStatus}
-          </span>
-        </Tooltip>
+        <div className="flex items-center gap-1.5">
+          <Tooltip content={getValidatorStatusDescription(validator.status || '')}>
+            <span className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md cursor-help capitalize ${textClass}`}>
+              <span className={`w-2 h-2 rounded-full ${dotClass}`}></span>
+              {displayStatus}
+            </span>
+          </Tooltip>
+          <RollupVersionTag rollupAddress={validator.rollupAddress} />
+        </div>
       </td>
 
       {/* Balance */}

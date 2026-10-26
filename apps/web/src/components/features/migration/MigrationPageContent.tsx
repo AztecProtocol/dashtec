@@ -135,7 +135,7 @@ const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 const Hero: React.FC<{
   migration: RollupMigration;
-  deprecated: { address: string; label: string }[];
+  deprecated: { address: string; label: string; isLive: boolean }[];
   onSelectVersion: (address: string) => void;
 }> = ({ migration, deprecated, onSelectVersion }) => {
   const upgraded = migration.upgradedAt?.timestamp
@@ -169,9 +169,21 @@ const Hero: React.FC<{
               </h1>
             </div>
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
-              {upgraded ? <>The network moved to {migration.to.label} on {upgraded}. </> : null}
-              Sequencers that haven&apos;t moved stay on {migration.from.label} until they exit or stake again on {migration.to.label}.
+              {upgraded ? <>{migration.from.label} was replaced on {upgraded}. </> : null}
+              {migration.from.isLive
+                ? <>It is still producing blocks, so sequencers that haven&apos;t moved keep validating there until they exit or stake again on {migration.to.label}.</>
+                : <>It has stopped producing blocks; sequencers still on it can only exit, or stake again on {migration.to.label}.</>}
             </p>
+            <span
+              className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
+                migration.from.isLive
+                  ? 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:ring-amber-700/50'
+                  : 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-600'
+              }`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${migration.from.isLive ? 'bg-amber-500 animate-pulse' : 'bg-slate-400'}`} />
+              {migration.from.label} {migration.from.isLive ? 'still running' : 'stopped'}
+            </span>
           </div>
 
           {deprecated.length > 1 && (
@@ -186,7 +198,9 @@ const Hero: React.FC<{
                 className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
               >
                 {[...deprecated].reverse().map((version) => (
-                  <option key={version.address} value={version.address}>{version.label}</option>
+                  <option key={version.address} value={version.address}>
+                    {version.label} — {version.isLive ? 'still running' : 'stopped'}
+                  </option>
                 ))}
               </select>
             </div>

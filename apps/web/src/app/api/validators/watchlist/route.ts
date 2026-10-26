@@ -168,6 +168,7 @@ export async function POST(request: NextRequest) {
       rank: r.rank,
       epochPerformanceHistory: historyByValidator[r.address] || [],
       rollupVersion: r.rollupVersion,
+      rollupAddress: r.rollupAddress,
     }));
 
     // Get status counts for the watchlist

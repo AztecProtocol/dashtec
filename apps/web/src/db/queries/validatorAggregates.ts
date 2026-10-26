@@ -34,6 +34,7 @@ export function createValidatorAggregatesCTE(options: ValidatorAggregatesCTEOpti
     ${Prisma.raw(targetTable)} AS (
       SELECT
         v.address,
+        v.rollup_address AS validator_rollup_address,
         v.validator_hex_index,
         v.stake_balance,
         v.status,
@@ -86,7 +87,7 @@ export function createValidatorAggregatesCTE(options: ValidatorAggregatesCTEOpti
       AND v.rollup_address IN (${Prisma.join(rollupAddresses)})
       AND v.status NOT IN (${VALIDATOR_STATUS.NONE})
       GROUP BY
-        v.address, v.validator_hex_index, v.stake_balance, v.status,
+        v.address, v.rollup_address, v.validator_hex_index, v.stake_balance, v.status,
         v.activation_date, v.x_handle, v.name, v.x_user_id,
         v.x_image_url, v."discordId", v."discordUsername", v."discordAvatar",
         vr.migration_status, vr.deposit_type, vq.attester_address,
@@ -280,6 +281,7 @@ export function createFinalSelection(options: FinalSelectionOptions = {}): Prism
       rank::integer AS rank,
       is_in_queue,
       migration_status AS "migrationStatus",
+      validator_rollup_address AS "rollupAddress",
       deposit_type AS "depositType"
       ${countColumn},
       max_total_attestations::integer,

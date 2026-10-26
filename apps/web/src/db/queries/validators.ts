@@ -50,6 +50,7 @@ export interface RankedValidatorRow {
   rank: number;
   is_in_queue: boolean;
   migrationStatus: string | null;
+  rollupAddress: string;
   depositType: string | null;
   total_count: bigint;
   max_total_attestations: bigint;

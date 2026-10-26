@@ -51,5 +51,6 @@ export function mapValidatorRow(r: RankedValidatorRow): ValidatorPerformance {
     isInQueue: r.is_in_queue,
     migrationStatus: r.migrationStatus || 'active',
     depositType: r.depositType || 'rollup',
+    rollupAddress: r.rollupAddress,
   } as unknown as ValidatorPerformance;
 }

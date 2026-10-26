@@ -16,6 +16,7 @@ import { useApp } from '@/context/AppContext';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { useNotification } from '@/context/NotificationContext';
 import { useStatusColor } from '@/hooks/useStatusColor';
+import { RollupVersionTag } from '@/components/ui/RollupVersionTag';
 
 interface ValidatorCardProps {
   validator: ValidatorPerformance;
@@ -184,6 +185,7 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({ validator, showSco
                   {validator.status}
                 </span>
               </Tooltip>
+              <RollupVersionTag rollupAddress={validator.rollupAddress} />
               {isMigrated && (
                 <Tooltip content="Inherited from an older rollup version">
                   <span className="px-1.5 py-[1px] text-[10px] font-medium rounded bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300 cursor-help">

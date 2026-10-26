@@ -136,6 +136,8 @@ export interface Validator {
   migrationStatus?: ValidatorMigrationStatus;
   depositType?: 'rollup' | 'gse' | 'migration';
   journey?: ValidatorJourneyEvent[];
+  /** The rollup the sequencer is on; differs from the active one while it hasn't moved. */
+  rollupAddress?: string;
 }
 
 export interface ValidatorPerformance extends Validator {

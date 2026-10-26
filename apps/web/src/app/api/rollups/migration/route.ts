@@ -9,6 +9,7 @@ import {
   fetchMigrationByProvider,
   fetchRemainingValidators,
 } from '@/db/queries/rollupMigration';
+import { fetchLastCheckpointBlocks, isLiveRollup } from '@/db/queries/rollupActivity';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,22 +40,37 @@ export async function GET(request: NextRequest) {
 
   try {
     const registry = await getRollupRegistry();
-    const deprecated = registry.versions.filter((version) => version.deprecated);
     const current = registry.versions.find((version) => version.address === registry.activeAddress)!;
+
+    // Only versions someone was ever on are worth offering: testnet's registry
+    // also holds early rollups nothing was indexed for.
+    const [cohorts, lastCheckpoints] = await Promise.all([
+      prisma.validatorRollup.groupBy({ by: ['rollup_address'], _count: { _all: true } }),
+      fetchLastCheckpointBlocks(registry.versions.map((version) => version.address)),
+    ]);
+    const populated = new Set(cohorts.filter((row) => row._count._all > 0).map((row) => row.rollup_address.toLowerCase()));
+    const deprecated = registry.versions
+      .filter((version) => version.deprecated && populated.has(version.address))
+      .map((version) => ({ ...version, isLive: isLiveRollup(version.address, lastCheckpoints) }));
 
     if (deprecated.length === 0) {
       return NextResponse.json({ migration: null, deprecated: [], status: 'ok' });
     }
 
+    // Default to the newest previous version that is still producing blocks -
+    // that is where sequencers are actually left behind - else the newest one.
     const from = params.from
       ? deprecated.find((version) => version.address === params.from!.toLowerCase())
-      : deprecated[deprecated.length - 1];
+      : [...deprecated].reverse().find((version) => version.isLive) ?? deprecated[deprecated.length - 1];
     if (!from) {
       return NextResponse.json({ error: `${params.from} is not a previous rollup version` }, { status: 400 });
     }
 
-    // The version that replaced `from`: the next one in registry order.
-    const to = registry.versions[registry.versions.indexOf(from) + 1] ?? current;
+    // Where its sequencers belong now is the current version; when `from` was
+    // left behind is when the next one in registry order replaced it.
+    const fromIndex = registry.versions.findIndex((version) => version.address === from.address);
+    const replacedBy = registry.versions[fromIndex + 1] ?? current;
+    const to = current;
 
     benchmark.start('queryExecution');
     const [summary, providers, remaining, upgrade] = await Promise.all([
@@ -62,7 +78,7 @@ export async function GET(request: NextRequest) {
       fetchMigrationByProvider(from.address),
       fetchRemainingValidators(from.address, params),
       prisma.canonicalRollupUpdated.findFirst({
-        where: { instance_address: { equals: to.address, mode: 'insensitive' } },
+        where: { instance_address: { equals: replacedBy.address, mode: 'insensitive' } },
         orderBy: { block_number: 'asc' },
       }),
     ]);
@@ -72,8 +88,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       migration: {
-        from: { address: from.address, label: from.label },
-        to: { address: to.address, label: to.label, isCurrent: to.address === current.address },
+        from: { address: from.address, label: from.label, isLive: from.isLive },
+        to: { address: to.address, label: to.label, isCurrent: true },
         upgradedAt: upgrade
           ? { blockNumber: upgrade.block_number.toString(), timestamp: upgrade.timestamp ? Number(upgrade.timestamp) : null }
           : null,
@@ -86,7 +102,7 @@ export async function GET(request: NextRequest) {
           totalPages: Math.ceil(remaining.total / params.limit),
         },
       },
-      deprecated: deprecated.map((version) => ({ address: version.address, label: version.label })),
+      deprecated: deprecated.map((version) => ({ address: version.address, label: version.label, isLive: version.isLive })),
       benchmark: total,
       benchmarks: details,
       status: 'ok',

@@ -11,6 +11,7 @@ import { generateValidatorRenameMessage } from '@/services/auth/signatureService
 import { useNotification } from '@/context/NotificationContext';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { getAddressUrl, getExplorerName } from '@/utils/blockExplorer';
+import { RollupVersionTag } from '@/components/ui/RollupVersionTag';
 
 interface ValidatorHeaderProps {
   validator: Validator;
@@ -81,6 +82,7 @@ export const ValidatorHeader: React.FC<ValidatorHeaderProps> = ({ validator, isO
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-brand-violet to-amber-600 dark:from-slate-100 dark:via-accent-purple-light dark:to-amber-400 bg-clip-text text-transparent">
                   {validator.name || `Sequencer ${validator.index}`}
                 </h1>
+                <RollupVersionTag rollupAddress={validator.rollupAddress} size="md" />
               </div>
               <div className="flex flex-col sm:flex-row justify-start sm:justify-between items-start sm:items-center mt-3 gap-3">
                 <div className="flex items-center gap-2">
