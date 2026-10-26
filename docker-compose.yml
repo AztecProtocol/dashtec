@@ -358,6 +358,10 @@ services:
       - "${AZTEC_NODE_P2P_PORT_MAINNET_PREVIOUS:-40401}:${AZTEC_NODE_P2P_PORT_MAINNET_PREVIOUS:-40401}/udp"
     environment:
       NETWORK: ${AZTEC_NODE_NETWORK_MAINNET_PREVIOUS:-mainnet}
+      # Pin the rollup this node follows. Unset, it follows the canonical (newer)
+      # rollup, finds it incompatible with its software and idles in standby.
+      # Rendered from previousRollupNode.rollupVersion, which Ansible requires.
+      ROLLUP_VERSION: ${AZTEC_NODE_ROLLUP_VERSION_MAINNET_PREVIOUS:-}
       ETHEREUM_HOSTS: ${AZTEC_NODE_ETHEREUM_HOSTS_MAINNET}
       L1_CONSENSUS_HOST_URLS: ${AZTEC_NODE_L1_CONSENSUS_HOSTS_MAINNET}
       AZTEC_PORT: 8080
@@ -385,7 +389,9 @@ services:
         - CMD
         - node
         - -e
-        - "fetch('http://127.0.0.1:8080/status').then(r => { if (!r.ok) throw new Error(String(r.status)); process.exit(0); }).catch(() => process.exit(1))"
+        # JSON-RPC, not /status: a node waiting in standby for a compatible
+        # rollup answers /status but nothing else.
+        - "fetch('http://127.0.0.1:8080', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'node_getNodeVersion', params: [] }) }).then(r => r.json()).then(j => process.exit(j.result ? 0 : 1)).catch(() => process.exit(1))"
       interval: 15s
       timeout: 10s
       retries: 5
@@ -505,6 +511,10 @@ services:
       - "${AZTEC_NODE_P2P_PORT_TESTNET_PREVIOUS:-40501}:${AZTEC_NODE_P2P_PORT_TESTNET_PREVIOUS:-40501}/udp"
     environment:
       NETWORK: ${AZTEC_NODE_NETWORK_TESTNET_PREVIOUS:-testnet}
+      # Pin the rollup this node follows. Unset, it follows the canonical (newer)
+      # rollup, finds it incompatible with its software and idles in standby.
+      # Rendered from previousRollupNode.rollupVersion, which Ansible requires.
+      ROLLUP_VERSION: ${AZTEC_NODE_ROLLUP_VERSION_TESTNET_PREVIOUS:-}
       ETHEREUM_HOSTS: ${AZTEC_NODE_ETHEREUM_HOSTS_TESTNET}
       L1_CONSENSUS_HOST_URLS: ${AZTEC_NODE_L1_CONSENSUS_HOSTS_TESTNET}
       AZTEC_PORT: 8080
@@ -532,7 +542,9 @@ services:
         - CMD
         - node
         - -e
-        - "fetch('http://127.0.0.1:8080/status').then(r => { if (!r.ok) throw new Error(String(r.status)); process.exit(0); }).catch(() => process.exit(1))"
+        # JSON-RPC, not /status: a node waiting in standby for a compatible
+        # rollup answers /status but nothing else.
+        - "fetch('http://127.0.0.1:8080', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'node_getNodeVersion', params: [] }) }).then(r => r.json()).then(j => process.exit(j.result ? 0 : 1)).catch(() => process.exit(1))"
       interval: 15s
       timeout: 10s
       retries: 5

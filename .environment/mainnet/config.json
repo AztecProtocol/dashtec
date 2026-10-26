@@ -27,6 +27,7 @@
   },
   "previousRollupNode": {
     "rollupAddress": "0x91ff8bbd8ebb07893010d50a48a1609e5ebd8e34",
+    "rollupVersion": 4248422647,
     "url": "http://aztec-node-mainnet-previous:8080",
     "image": "aztecprotocol/aztec:5.2.0@sha256:2dd0b84a5a42285762390e38f82a6ba737bfeba6e39df688af7f050dae81a3b0",
     "network": "mainnet",
@@ -36,7 +37,7 @@
     "sentinelHistoryLengthInEpochs": 24,
     "maxOldSpaceSizeMb": 4096,
     "memLimit": "8g",
-    "_comment": "V5 keeps producing blocks after V6 became canonical, and only a node running V5 software can report its sequencers' attestations. This runs that node plus a stats-only indexer-custom (profile <network>-previous) for rollupAddress. Remove the block once that rollup stops producing blocks."
+    "_comment": "V5 keeps producing blocks after V6 became canonical, and only a node running V5 software can report its sequencers' attestations. This runs that node plus a stats-only indexer-custom (profile <network>-previous) for rollupAddress. rollupVersion is that rollup's on-chain registry version: without it the node follows the canonical rollup, finds it incompatible, and idles in standby. Remove the block once that rollup stops producing blocks."
   },
   "contracts": {
     "rollupAddress": "0xe37a2663cc9c119ba41572c40fab0bbb23a5402f",

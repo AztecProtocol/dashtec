@@ -223,7 +223,11 @@ rollup's software, so while it runs, add a `previousRollupNode` block to the
 network's `config.json` (mainnet has one for V5). The deploy then also starts the
 `<network>-previous` profile: `aztec-node-<network>-previous` and a stats-only
 `indexer-custom-<network>-previous` that writes rows under the old rollup's
-address. Remove the block once the rollup stops producing blocks; the next deploy
+address. `rollupVersion` is required: it is the old rollup's registry version
+(`Registry.getVersion(i)`), passed to the node as `ROLLUP_VERSION`. Without it a
+node follows the canonical rollup, finds it incompatible with its software and
+idles in standby, answering `/status` but no JSON-RPC — so its healthcheck makes
+a JSON-RPC call rather than hitting `/status`. Remove the block once the rollup stops producing blocks; the next deploy
 stops both containers.
 
 ## Resource notes
