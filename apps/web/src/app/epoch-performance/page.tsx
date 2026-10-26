@@ -50,7 +50,7 @@ const EpochPerformancePage: NextPage = () => {
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
 
   // Use query hook for live slot activity data
-  const { data, isLoading: isLoadingData } = useEpochLiveSlotActivity(currentEpoch, rollupParam, {
+  const { data, isLoading: isLoadingData, error: activityError } = useEpochLiveSlotActivity(currentEpoch, rollupParam, {
     enabled: currentEpoch !== undefined && totalSlotsInEpoch > 0,
     refetchInterval: 3000,
   });
@@ -219,20 +219,25 @@ const EpochPerformancePage: NextPage = () => {
                   <ValidatorBarSkeleton />
                   <ValidatorBarSkeleton />
                 </>
-              ) : !isLoadingData && filteredValidatorsSlotActivity.length === 0 && totalSlotsInEpoch > 0 ? (
-                <>
-                  <ValidatorBarSkeleton />
-                  <ValidatorBarSkeleton />
-                  <ValidatorBarSkeleton />
-                </>
-              ) : !isLoadingData && filteredValidatorsSlotActivity.length === 0 && searchTerm !== "" ? (
+              ) : filteredValidatorsSlotActivity.length === 0 ? (
+                // Not loading and nothing to show. This used to render the loading
+                // skeletons too, so an empty answer or a failed request looked like
+                // a section that never finished loading.
                 <div className="text-center py-12">
                   <div className="flex flex-col items-center gap-4">
                     <div className="p-4 bg-slate-100/50 dark:bg-slate-700/30 rounded-2xl">
-                      <MagnifyingGlassIcon className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+                      {searchTerm
+                        ? <MagnifyingGlassIcon className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+                        : <InformationCircleIcon className="h-8 w-8 text-slate-400 dark:text-slate-500" />}
                     </div>
-                    <p className="text-slate-500 dark:text-slate-400 font-medium">
-                      {searchTerm ? "No sequencers found matching your search." : "No sequencer activity data available for this epoch."}
+                    <p className="text-slate-500 dark:text-slate-400 font-medium max-w-md">
+                      {searchTerm
+                        ? 'No sequencers found matching your search.'
+                        : activityError
+                          ? "Couldn't load slot activity for this epoch. It will retry automatically."
+                          : data?.liveUnavailable
+                            ? `Live slot activity isn't available for ${labelFor(effectiveRollups[0]) ?? 'this version'}.`
+                            : 'No sequencer activity yet for this epoch.'}
                     </p>
                   </div>
                 </div>
