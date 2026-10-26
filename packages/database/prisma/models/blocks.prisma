@@ -14,6 +14,8 @@ model L2BlockProposed {
   coinbase              String  @db.Char(42)
 
   @@unique([transaction_hash, log_index], name: "unique_l2_block_proposed_transaction_log")
+  // Latest checkpoint per rollup: whether a replaced rollup is still running.
+  @@index([rollup_address, block_number])
   @@index([coinbase])
   @@index([slot_number])
   @@index([l2_block_number])

@@ -3,10 +3,18 @@
 import React, { createContext, useContext, useState, useMemo, useCallback, ReactNode } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useRollupVersions } from '@/hooks/queries/useRollupVersions';
-import type { RollupVersion } from '@/types/rollup';
+import type { RollupVersionStats } from '@/types/rollup';
 
 interface RollupContextValue {
-  versions: (RollupVersion & { validatorCount: number; epochCount: number; frozenAtBlock: string | null })[];
+  versions: RollupVersionStats[];
+  /**
+   * The versions worth offering in a picker: the active one, plus any with
+   * indexed sequencers, epochs or checkpoints. Testnet's registry also holds
+   * early rollups nothing was ever indexed for.
+   */
+  selectableVersions: RollupVersionStats[];
+  /** Display name for a rollup address (V5, V6.2), or a short address when unknown. */
+  labelFor: (address: string | null | undefined) => string | null;
   globalRollup: string;
   setGlobalRollup: (address: string) => void;
   activeRollup: string;
@@ -24,7 +32,17 @@ export const RollupProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
 
   const activeRollup = data?.active ?? '';
-  const versions = data?.versions ?? [];
+  const versions = useMemo(() => data?.versions ?? [], [data]);
+  const selectableVersions = useMemo(
+    () => versions.filter((v) =>
+      v.address === activeRollup || v.validatorCount > 0 || v.epochCount > 0 || v.lastCheckpointBlock !== null),
+    [versions, activeRollup],
+  );
+  const labelFor = useCallback((address: string | null | undefined) => {
+    if (!address) return null;
+    const version = versions.find((v) => v.address === address.toLowerCase());
+    return version?.label ?? `${address.slice(0, 6)}…${address.slice(-4)}`;
+  }, [versions]);
 
   const rollupFromUrl = searchParams.get('rollup');
   const [globalRollup, setGlobalRollupState] = useState<string>(
@@ -52,12 +70,14 @@ export const RollupProvider = ({ children }: { children: ReactNode }) => {
 
   const value = useMemo(() => ({
     versions,
+    selectableVersions,
+    labelFor,
     globalRollup: effectiveRollup,
     setGlobalRollup,
     activeRollup,
     isAggregate,
     isLoading,
-  }), [versions, effectiveRollup, setGlobalRollup, activeRollup, isAggregate, isLoading]);
+  }), [versions, selectableVersions, labelFor, effectiveRollup, setGlobalRollup, activeRollup, isAggregate, isLoading]);
 
   return <RollupContext.Provider value={value}>{children}</RollupContext.Provider>;
 };

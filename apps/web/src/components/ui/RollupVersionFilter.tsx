@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { rollupVersionState, ROLLUP_VERSION_STATE_DOT, ROLLUP_VERSION_STATE_TEXT, ROLLUP_VERSION_STATE_TITLE } from './rollupVersionStatus';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -41,7 +42,7 @@ const CHIP_ACTIVE_CLASSES = [
 ];
 
 interface RollupVersionFilterProps {
-  versions: { address: string; label: string; deprecated: boolean }[];
+  versions: { address: string; label: string; deprecated: boolean; isLive?: boolean }[];
   effectiveRollups: string[];
   activeRollup: string;
   onToggle: (address: string) => void;
@@ -119,16 +120,20 @@ export const RollupVersionFilter: React.FC<RollupVersionFilterProps> = ({
             onClick={() => onToggle(version.address)}
             className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border transition-all duration-200 cursor-pointer ${getChipClass(index, selected)}`}
           >
-            {/* Green dot for active rollup */}
-            {version.address === activeRollup && (
+            {/* Dot while the version still produces blocks */}
+            {rollupVersionState(version, activeRollup) !== 'stopped' && (
               <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                selected ? 'bg-white/80' : 'bg-emerald-500'
+                selected ? 'bg-white/80' : ROLLUP_VERSION_STATE_DOT[rollupVersionState(version, activeRollup)]
               }`} />
             )}
             <span>{version.label}</span>
-            {/* Deprecated indicator */}
             {version.deprecated && (
-              <span className={`text-[10px] ${selected ? 'text-white/70' : 'opacity-60'}`}>old</span>
+              <span
+                className={`text-[10px] ${selected ? 'text-white/70' : 'opacity-60'}`}
+                title={ROLLUP_VERSION_STATE_TITLE[rollupVersionState(version, activeRollup)]}
+              >
+                {ROLLUP_VERSION_STATE_TEXT[rollupVersionState(version, activeRollup)]}
+              </span>
             )}
           </button>
         );
@@ -174,13 +179,18 @@ export const RollupVersionFilter: React.FC<RollupVersionFilterProps> = ({
                         className="inline-block w-2 h-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: VERSION_CHART_COLORS[globalIndex % VERSION_CHART_COLORS.length] }}
                       />
-                      {/* Active indicator */}
-                      {version.address === activeRollup && (
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                      {/* Dot while the version still produces blocks */}
+                      {rollupVersionState(version, activeRollup) !== 'stopped' && (
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${ROLLUP_VERSION_STATE_DOT[rollupVersionState(version, activeRollup)]}`} />
                       )}
                       <span className="text-slate-700 dark:text-slate-300">{version.label}</span>
                       {version.deprecated && (
-                        <span className="ml-auto text-[10px] text-slate-400 dark:text-slate-500">old</span>
+                        <span
+                          className="ml-auto text-[10px] text-slate-400 dark:text-slate-500"
+                          title={ROLLUP_VERSION_STATE_TITLE[rollupVersionState(version, activeRollup)]}
+                        >
+                          {ROLLUP_VERSION_STATE_TEXT[rollupVersionState(version, activeRollup)]}
+                        </span>
                       )}
                       {selected && (
                         <svg className="ml-auto h-3 w-3 text-slate-600 dark:text-slate-300" fill="currentColor" viewBox="0 0 20 20">

@@ -18,6 +18,7 @@ import { ConnectWallet } from '../ui/ConnectWallet';
 import { Z_INDEX } from '@/utils/constants';
 import { useNetworks } from '@/hooks/useNetworks';
 import { useRollup } from '@/context/RollupContext';
+import { rollupVersionState, ROLLUP_VERSION_STATE_DOT, ROLLUP_VERSION_STATE_TEXT, ROLLUP_VERSION_STATE_TITLE } from '@/components/ui/rollupVersionStatus';
 import { getAddressUrl } from '@/utils/blockExplorer';
 
 /** Warning banner shown when viewing an older (inactive) rollup */
@@ -137,7 +138,7 @@ const NetworkSelector: React.FC = () => {
  */
 const RollupSelector: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { versions, globalRollup, setGlobalRollup, activeRollup } = useRollup();
+  const { selectableVersions: versions, globalRollup, setGlobalRollup, activeRollup } = useRollup();
 
   if (versions.length <= 1) return null;
 
@@ -193,14 +194,22 @@ const RollupSelector: React.FC = () => {
                       : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
                   }`}
                 >
-                  {/* Active/deprecated dot indicator */}
-                  <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                    version.address === activeRollup ? 'bg-emerald-500' : 'bg-slate-400'
-                  }`} />
-                  <span>{version.label}</span>
-                  {version.deprecated && (
-                    <span className="ml-auto text-[10px] text-slate-400 dark:text-slate-500">old</span>
-                  )}
+                  {/* Current / still producing / stopped */}
+                  {(() => {
+                    const state = rollupVersionState(version, activeRollup);
+                    return (
+                      <>
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${ROLLUP_VERSION_STATE_DOT[state]}`} />
+                        <span>{version.label}</span>
+                        <span
+                          className="ml-auto text-[10px] text-slate-400 dark:text-slate-500"
+                          title={ROLLUP_VERSION_STATE_TITLE[state]}
+                        >
+                          {ROLLUP_VERSION_STATE_TEXT[state]}
+                        </span>
+                      </>
+                    );
+                  })()}
                   {globalRollup === version.address && (
                     <svg className="ml-auto h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />

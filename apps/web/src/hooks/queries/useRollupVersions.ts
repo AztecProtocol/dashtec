@@ -1,8 +1,8 @@
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
-import type { RollupVersion } from '@/types/rollup';
+import type { RollupVersionStats } from '@/types/rollup';
 
 interface RollupVersionsResponse {
-  versions: (RollupVersion & { validatorCount: number; epochCount: number; frozenAtBlock: string | null })[];
+  versions: RollupVersionStats[];
   active: string;
   benchmark: string;
   status: string;

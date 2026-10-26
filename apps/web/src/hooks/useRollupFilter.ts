@@ -3,7 +3,7 @@ import { useRollup } from '@/context/RollupContext';
 
 /** Per-page rollup filter hook that can override the global selection */
 export function useRollupFilter() {
-  const { globalRollup, versions, activeRollup } = useRollup();
+  const { globalRollup, selectableVersions: versions, activeRollup } = useRollup();
   const [pageOverride, setPageOverride] = useState<string[] | null>(null);
 
   /** Resolved list of rollup addresses based on override or global state */
