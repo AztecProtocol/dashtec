@@ -11,7 +11,7 @@ import { SlotDetailsModal } from '@/components/features/epochs/SlotDetailsModal'
 import { EpochMetricsGrid } from '@/components/features/epochs/EpochMetricsGrid';
 import { EpochActivityLegend } from '@/components/features/epochs/EpochActivityLegend';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { MagnifyingGlassIcon, ChartBarSquareIcon, ArrowLeftIcon, ClockIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, ChartBarSquareIcon, ArrowLeftIcon, ClockIcon, UserGroupIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 
 import { useEpochCalculations } from '@/hooks/useEpochCalculations';
 import { useEpochSlotActivityData } from '@/hooks/useEpochSlotActivityData';
@@ -19,10 +19,12 @@ import PageTransitionWrapper from '@/components/layout/PageTransitionWrapper';
 import { useNetworkConfig } from '@/hooks/useNetworkConfig';
 import { useEpochLiveSlotActivity } from '@/hooks/queries/useEpochLiveSlotActivity';
 import { useRollupFilter } from '@/hooks/useRollupFilter';
+import { useRollup } from '@/context/RollupContext';
 
 
 const EpochPerformancePage: NextPage = () => {
-  const { rollupParam } = useRollupFilter();
+  const { rollupParam, effectiveRollups } = useRollupFilter();
+  const { labelFor } = useRollup();
   const configState = useNetworkConfig(rollupParam);
   const {
     currentEpoch,
@@ -159,6 +161,20 @@ const EpochPerformancePage: NextPage = () => {
               />
             )}
           </div>
+
+          {/* A previous rollup we run no node for has no live slot data. */}
+          {data?.liveUnavailable && (
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-200">
+              <InformationCircleIcon className="h-5 w-5 flex-shrink-0" />
+              <p>
+                Live slot activity isn&apos;t available for {labelFor(effectiveRollups[0]) ?? 'this version'}: only a node
+                running that version&apos;s software can report it, and none is following it.{' '}
+                <Link href={`/epochs${rollupParam ? `?rollup=${rollupParam}` : ''}`} className="font-medium underline">
+                  Past epochs are in Epoch History.
+                </Link>
+              </p>
+            </div>
+          )}
 
           {/* Performance Metrics */}
           <EpochMetricsGrid metrics={performanceMetrics} isLoading={isLoadingData} hasData={allValidatorsSlotActivity.length > 0} />

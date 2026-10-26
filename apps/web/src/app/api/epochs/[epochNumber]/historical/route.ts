@@ -12,9 +12,11 @@ export const dynamic = 'force-dynamic';
 const transformAttestationsToSlotActivity = async (
   attestations: any[],
   epochNumber: number,
-  providerMap: Map<string, any>
+  providerMap: Map<string, any>,
+  rollupAddress: string
 ): Promise<ValidatorEpochSlotActivity[]> => {
-  const networkConfig = await getNetworkConfigFromCacheOrContract();
+  // Slot timing differs per rollup; use the selected one's, not the active one's.
+  const networkConfig = await getNetworkConfigFromCacheOrContract(rollupAddress);
   const slotsInEpoch = networkConfig.epochDurationSlots;
   const activityByValidator: { [key: string]: ValidatorEpochSlotActivity } = {};
 
@@ -126,7 +128,7 @@ export async function GET(
       ])
     );
 
-    const transformedActivities = await transformAttestationsToSlotActivity(attestations, Number(epochNumber), validatorProviderMap);
+    const transformedActivities = await transformAttestationsToSlotActivity(attestations, Number(epochNumber), validatorProviderMap, rollupAddresses[0]);
 
     const { total } = benchmark.getResults();
     return NextResponse.json({

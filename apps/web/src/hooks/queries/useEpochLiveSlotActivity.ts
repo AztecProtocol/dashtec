@@ -3,6 +3,8 @@ import { ValidatorEpochSlotActivity } from '@/types';
 
 interface EpochLiveSlotActivityResponse {
   activities: ValidatorEpochSlotActivity[];
+  /** Set when no node of ours follows the selected rollup, so there is no live data. */
+  liveUnavailable?: boolean;
 }
 
 /**

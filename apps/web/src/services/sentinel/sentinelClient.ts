@@ -1,4 +1,5 @@
 import { getEnv } from '@/config';
+import { getActiveRollupAddress } from '@/services/rollupRegistry';
 
 export interface SentinelHistoryEvent {
   slot: string | number;
@@ -28,19 +29,49 @@ export class SentinelApiError extends Error {
   }
 }
 
+/** No node we run follows this rollup, so it has no live validator stats. */
+export class SentinelUnavailableError extends Error {
+  constructor(public readonly rollupAddress: string) {
+    super(`No Aztec node is configured for rollup ${rollupAddress}`);
+    this.name = 'SentinelUnavailableError';
+  }
+}
+
 const DEFAULT_TIMEOUT_MS = 8_000;
 
 /**
- * Fetch validator stats from the Sentinel JSON-RPC endpoint.
- * Throws {@link SentinelApiError} on transport failure, non-2xx, or RPC error.
+ * The node to ask about a rollup. A node only reports on the rollup its software
+ * runs: NEXT_SENTINEL_URL is the one following the active rollup, and a previous
+ * rollup that is still producing blocks may have its own (previousRollupNode).
+ */
+async function sentinelUrlFor(rollupAddress?: string): Promise<string> {
+  const { NEXT_SENTINEL_URL, PREVIOUS_SENTINEL_URLS } = getEnv();
+  if (!rollupAddress) return NEXT_SENTINEL_URL;
+
+  const address = rollupAddress.toLowerCase();
+  if (address === await getActiveRollupAddress()) return NEXT_SENTINEL_URL;
+
+  for (const entry of (PREVIOUS_SENTINEL_URLS ?? '').split(',')) {
+    const separator = entry.indexOf('=');
+    if (separator === -1) continue;
+    if (entry.slice(0, separator).trim().toLowerCase() === address) return entry.slice(separator + 1).trim();
+  }
+  throw new SentinelUnavailableError(address);
+}
+
+/**
+ * Fetch validator stats from the Sentinel JSON-RPC endpoint of the node that
+ * follows `rollupAddress` (the active rollup when omitted).
+ * Throws {@link SentinelApiError} on transport failure, non-2xx, or RPC error,
+ * and {@link SentinelUnavailableError} when no node follows that rollup.
  */
 export async function fetchValidatorStats(
-  options: { timeoutMs?: number } = {},
+  options: { timeoutMs?: number; rollupAddress?: string } = {},
 ): Promise<SentinelStatsResult> {
-  const { NEXT_SENTINEL_URL } = getEnv();
+  const url = await sentinelUrlFor(options.rollupAddress);
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
-  const response = await fetch(NEXT_SENTINEL_URL, {
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

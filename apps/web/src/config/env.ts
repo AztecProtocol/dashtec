@@ -15,6 +15,8 @@ const envSchema = z.object({
 
   ETHEREUM_RPC_URL: z.string().startsWith('http', 'Must be a valid HTTP URL'),
   NEXT_SENTINEL_URL: z.string().startsWith('http', 'Must be a valid HTTP URL'),
+  // "rollupAddress=nodeUrl" pairs for previous rollups we still run a node for; see previousRollupNode.
+  PREVIOUS_SENTINEL_URLS: z.string().optional(),
   REDIS_URL: z.string().optional(),
 
   // OAuth is optional (empty = provider disabled). Default to '' so an unset

@@ -38,6 +38,10 @@ const envMapRuntime = {
   // Our own Aztec node (docker-compose service `aztec-node-<network>`), which
   // serves the node_* JSON-RPC methods the sentinel proxy used to front.
   'NEXT_SENTINEL_URL': config.aztecNode.url,
+  // The node following a previous rollup that is still running, for its live epoch view.
+  'PREVIOUS_SENTINEL_URLS': config.previousRollupNode
+    ? `${config.previousRollupNode.rollupAddress.toLowerCase()}=${config.previousRollupNode.url}`
+    : '',
   'ETHEREUM_EXPLORER_URL': config.app.ethereumExplorerUrl,
   'AZTEC_SCAN_URL': config.app.aztecScanUrl || '',
   'CHAIN_NAME': config.network.type,
@@ -87,6 +91,10 @@ const envMapBuild = {
   'APP_URL': config.app.url,
   'AZTEC_SCAN_URL': config.app.aztecScanUrl || '',
   'NEXT_SENTINEL_URL': config.aztecNode.url,
+  // The node following a previous rollup that is still running, for its live epoch view.
+  'PREVIOUS_SENTINEL_URLS': config.previousRollupNode
+    ? `${config.previousRollupNode.rollupAddress.toLowerCase()}=${config.previousRollupNode.url}`
+    : '',
   'ROLLUP_CONTRACT_ADDRESS': config.contracts.rollupAddress,
   'SLASHING_PROPOSER_CONTRACT_ADDRESS': config.contracts.slashingProposerAddress,
   'ROLLUP_LABELS': rollupLabels(config.contracts),

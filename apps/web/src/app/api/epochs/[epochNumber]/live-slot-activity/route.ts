@@ -13,6 +13,7 @@ import {
   fetchValidatorStats,
   filterStatsToCommittee,
   SentinelApiError,
+  SentinelUnavailableError,
 } from '@/services/sentinel/sentinelClient';
 import { createLogger } from '@dashtec/shared-utils';
 import type { Address } from 'viem';
@@ -59,8 +60,9 @@ export async function GET(
     benchmark.start('load');
     const [detailsMap, sentinelResult, networkConfig] = await Promise.all([
       loadCommitteeWithProviders(committee),
-      fetchValidatorStats(),
-      getNetworkConfigFromCacheOrContract(),
+      fetchValidatorStats({ rollupAddress }),
+      // Slot timing differs per rollup; use the selected one's, not the active one's.
+      getNetworkConfigFromCacheOrContract(rollupAddress),
     ]);
     benchmark.end('load');
 
@@ -88,6 +90,16 @@ export async function GET(
       status: 'ok' as const,
     });
   } catch (error) {
+    if (error instanceof SentinelUnavailableError) {
+      // A previous rollup with no node of ours following it: there is no live
+      // data to give, and that is a state the page should say, not an error.
+      return NextResponse.json({
+        activities: [],
+        liveUnavailable: true,
+        benchmark: benchmark.getResults().total,
+        status: 'ok' as const,
+      });
+    }
     if (error instanceof SentinelApiError) {
       logError(error, 'SENTINEL_API_ERROR', {
         status: error.status,
