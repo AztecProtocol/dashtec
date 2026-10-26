@@ -57,6 +57,9 @@ export interface RankedValidatorRow {
   max_total_blocks_produced: bigint;
 }
 
+/** The attester states a registered sequencer can be in, in lifecycle order. */
+const ATTESTER_STATUSES = [VALIDATOR_STATUS.ACTIVE, VALIDATOR_STATUS.ZOMBIE, VALIDATOR_STATUS.EXITING] as const;
+
 interface StatusCountRow {
   status: string;
   count: string;
@@ -200,16 +203,17 @@ export async function fetchRankedValidators(params: ValidatorListParams): Promis
 export async function fetchValidatorStatusCounts(
   params: ValidatorListParams,
 ): Promise<{ status: string; count: number }[]> {
-  const { filters, isActiveRollup, rollupAddresses } = params;
+  const { filters, rollupAddresses } = params;
 
   const searchClause = filters.search ? Prisma.sql`AND ${buildSearchClause(filters.search)}` : Prisma.sql``;
   const providerClause = filters.provider
     ? Prisma.sql`AND "providerIdentifier" = ${filters.provider}`
     : Prisma.sql``;
 
-  const statusExpr = isActiveRollup
-    ? Prisma.sql`v.status`
-    : Prisma.sql`vr.migration_status AS status`;
+  // Count the same status the list filters on (Validator.status, the
+  // on-chain attester status). Counting migration_status on a previous rollup
+  // offered "active" / "exiting" options that matched no rows.
+  const statusExpr = Prisma.sql`v.status`;
 
   const rows = await prisma.$queryRaw<StatusCountRow[]>`
     WITH validators_with_provider AS (
@@ -245,7 +249,16 @@ export async function fetchValidatorStatusCounts(
     ORDER BY count DESC;
   `;
 
-  return rows
-    .filter(item => (isActiveRollup ? item.status !== VALIDATOR_STATUS.NONE : true))
-    .map(item => ({ status: item.status, count: parseInt(item.count, 10) }));
+  // Always offer the three attester states, in lifecycle order and with zero
+  // counts, so the filter gives the full picture rather than only the states
+  // that happen to have sequencers right now.
+  const counts = new Map(
+    rows
+      .filter(item => item.status !== VALIDATOR_STATUS.NONE)
+      .map(item => [item.status, parseInt(item.count, 10)] as const),
+  );
+  const ordered = ATTESTER_STATUSES.map(status => ({ status, count: counts.get(status) ?? 0 }));
+  const others = [...counts].filter(([status]) => !ATTESTER_STATUSES.includes(status as typeof ATTESTER_STATUSES[number]))
+    .map(([status, count]) => ({ status, count }));
+  return [...ordered, ...others];
 }
