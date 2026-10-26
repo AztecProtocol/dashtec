@@ -54,6 +54,37 @@ export class CanonicalRollupUpdatedMaterializer extends BaseMaterializer {
     await refreshMigrationStatus();
   }
 
+  /**
+   * Every rollup version the app knows about comes from this table, so one
+   * missing row hides a whole version and stretches its predecessor over it —
+   * which is how testnet lost its first V6 rollup while the later ones showed.
+   * The cursor only moves forward, so a row lost behind it (a reorg reset that
+   * deleted it, say) is never fetched again. The table is a handful of rows,
+   * so reconcile all of it against Ponder whenever the stream is idle.
+   */
+  private lastReconcileMs = 0;
+
+  protected async onIdle() {
+    const RECONCILE_INTERVAL_MS = 60_000;
+    const now = Date.now();
+    if (now - this.lastReconcileMs < RECONCILE_INTERVAL_MS) return;
+    this.lastReconcileMs = now;
+
+    const [ponderRows, existing] = await Promise.all([
+      ponderDb.select().from(canonicalRollupUpdated),
+      prisma.canonicalRollupUpdated.findMany({ select: { id: true } }),
+    ]);
+    const known = new Set(existing.map((row) => row.id));
+    const missing = ponderRows.filter((row) => !known.has(row.id));
+    if (missing.length === 0) return;
+
+    this.logger.warn(
+      `Restoring ${missing.length} CanonicalRollupUpdated row(s) missing behind the cursor: ` +
+      missing.map((row) => `${row.instance_address}@${row.block_number}`).join(', '),
+    );
+    await this.materializeBatch(missing);
+  }
+
   protected extractCursor(row: typeof canonicalRollupUpdated.$inferSelect): EventCursor {
     return {
       blockNumber: row.block_number.toString(),
