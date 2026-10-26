@@ -9,40 +9,46 @@ import { createLogger } from '@dashtec/shared-utils';
 
 const logger = createLogger('IndexerCustom');
 
+/**
+ * COLLECTORS selects which collectors run (comma-separated names below); all
+ * of them when unset. A second instance for a previous rollup that is still
+ * running only needs the ones that read its own Aztec node.
+ */
+const COLLECTOR_FACTORIES = {
+  validatorStats: () => new ValidatorStatsCollector(),
+  validatorList: () => new ValidatorListCollector(),
+  epochIntegrity: () => new EpochIntegrityCollector(),
+  epochAggregates: () => new EpochAggregatesCollector(),
+  validatorMigration: () => new ValidatorMigrationCollector(),
+  providerList: () => new ProviderListCollector(),
+  tokenPrice: () => new TokenPriceCollector(),
+} as const;
+
+function selectedCollectors(): (keyof typeof COLLECTOR_FACTORIES)[] {
+  const all = Object.keys(COLLECTOR_FACTORIES) as (keyof typeof COLLECTOR_FACTORIES)[];
+  const requested = (process.env.COLLECTORS ?? '').split(',').map((name) => name.trim()).filter(Boolean);
+  if (requested.length === 0) return all;
+
+  const unknown = requested.filter((name) => !(name in COLLECTOR_FACTORIES));
+  if (unknown.length > 0) {
+    throw new Error(`Unknown COLLECTORS: ${unknown.join(', ')} (known: ${all.join(', ')})`);
+  }
+  return requested as (keyof typeof COLLECTOR_FACTORIES)[];
+}
+
 async function main() {
-  logger.info('Starting all collectors...');
+  const names = selectedCollectors();
+  logger.info(`Starting collectors: ${names.join(', ')}`);
 
-  const statsCollector = new ValidatorStatsCollector();
-  const listCollector = new ValidatorListCollector();
-  const integrityCollector = new EpochIntegrityCollector();
-  const aggregatesCollector = new EpochAggregatesCollector();
-  const migrationCollector = new ValidatorMigrationCollector();
-  const providerListCollector = new ProviderListCollector();
-  const tokenPriceCollector = new TokenPriceCollector()
+  const collectors = names.map((name) => COLLECTOR_FACTORIES[name]());
 
-  await Promise.all([
-    statsCollector.start(),
-    listCollector.start(),
-    integrityCollector.start(),
-    aggregatesCollector.start(),
-    migrationCollector.start(),
-    providerListCollector.start(),
-    tokenPriceCollector.start()
-  ]);
+  await Promise.all(collectors.map((collector) => collector.start()));
 
   logger.info('All collectors started successfully');
 
   const gracefulShutdown = async () => {
     logger.info('Received shutdown signal. Shutting down gracefully...');
-    await Promise.all([
-      statsCollector.shutdown(),
-      listCollector.shutdown(),
-      integrityCollector.shutdown(),
-      aggregatesCollector.shutdown(),
-      migrationCollector.shutdown(),
-      providerListCollector.shutdown(),
-      tokenPriceCollector.shutdown()
-    ]);
+    await Promise.all(collectors.map((collector) => collector.shutdown()));
     logger.info('Graceful shutdown complete');
     process.exit(0);
   };

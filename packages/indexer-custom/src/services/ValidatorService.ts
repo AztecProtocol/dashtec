@@ -92,8 +92,11 @@ export class ValidatorService implements IValidatorService {
           first_seen_at: new Date(),
           last_updated_at: data.last_updated_at,
         },
+        // rollup_address is only set when a validator is first seen. Keeping it
+        // current is ValidatorListCollector's job (it checks every rollup); a
+        // stats instance for a previous rollup would otherwise drag every
+        // validator still in that node's history back onto it each poll.
         update: {
-          rollup_address: config.ROLLUP_CONTRACT_ADDRESS,
           last_updated_at: data.last_updated_at,
         },
       });
